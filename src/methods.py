@@ -69,7 +69,7 @@ class Bonferroni(MultipleTesting):
     def __call__(self, p_values, alpha):
         m = len(p_values)
         threshold = alpha / m
-        return p_values < threshold
+        return p_values <=threshold
 
     @property
     def name(self):

@@ -161,10 +161,9 @@ def generate_means(m, m0, scheme, L, rng=None):
         raise ValueError("Invalid scheme. Choose from ['E', 'D', 'I']")
     
     m1 = m - m0
-    counts = (weights / weights.sum()) * m1
-    counts = np.round(counts).astype(int)
-    diff = m1 - counts.sum()
-    counts[0] += diff
+    weights = np.array(weights)
+    proportions = weights / weights.sum()
+    counts = np.floor(proportions * m1).astype(int)
     
     # adjust for rounding errors
     remainder = m1 - counts.sum()
@@ -179,14 +178,14 @@ def generate_means(m, m0, scheme, L, rng=None):
     means = np.concatenate([
         np.zeros(m - m1),
         np.repeat(levels, counts)])
-    np.random.shuffle(means)
+    rng.shuffle(means)
     
     return means
 
 def compute_p_values(normal_samples):
     return 2 * stats.norm.cdf(-np.abs(normal_samples))
 
-def generate_scenario(m, m0, scheme, L, rng=None):
+def generate_scenario(samples, m, m0, scheme, L, rng=None):
     """Generate a simulation scenario with p-values from Gaussian samples.
 
     Parameters
@@ -210,7 +209,7 @@ def generate_scenario(m, m0, scheme, L, rng=None):
     if rng is None:
         rng = np.random.default_rng()
         
-    means = generate_means(sample=None, m=m, m0=m0, scheme=scheme, L=L, rng=rng)
-    samples = rng.normal(loc=means, scale=1.0, size=m)
-    p_values = compute_p_values(samples)
+    means = generate_means(m=m, m0=m0, scheme=scheme, L=L, rng=rng)
+    shifted_samples = means + samples
+    p_values = compute_p_values(shifted_samples)
     return p_values
