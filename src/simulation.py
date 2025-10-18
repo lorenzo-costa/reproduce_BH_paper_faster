@@ -30,8 +30,8 @@ def run_simulation(m, m0, L, scheme, method, alpha, nsim=100, rng=None):
     ----------
     m : list or np.ndarray of int
         Number of hypotheses tested
-    m0 : list or np.ndarray of int
-        Number of true null hypotheses
+    m0 : list or np.ndarray of float
+        Fraction of true null hypotheses
     L : list or np.ndarray of int
         Upper bound on non-zero means
     scheme : list or np.ndarray of str
@@ -69,6 +69,7 @@ def run_simulation(m, m0, L, scheme, method, alpha, nsim=100, rng=None):
         for m_i in m:
             samples = NormalGenerator(loc=0, scale=1).generate(m_i, rng=rng)
             for m0_i, L_i, scheme_i, method_i in itertools.product(m0, L, scheme, method):
+                m0_i = int(m_i*m0_i)
                 scenario_out = run_scenario(samples, m0_i, L_i, scheme_i, method_i, alpha, rng=rng)
                 scenario_out['nsim'] = i + 1
                 out = pd.concat([out, pd.DataFrame(scenario_out, index=[0])], ignore_index=True)
