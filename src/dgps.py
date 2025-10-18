@@ -184,32 +184,3 @@ def generate_means(m, m0, scheme, L, rng=None):
 
 def compute_p_values(normal_samples):
     return 2 * stats.norm.cdf(-np.abs(normal_samples))
-
-def generate_scenario(samples, m, m0, scheme, L, rng=None):
-    """Generate a simulation scenario with p-values from Gaussian samples.
-
-    Parameters
-    ----------
-    m : int
-        Number of hypotheses to test
-    m0 : int
-        Number of true null hypotheses
-    scheme : str
-        The testing scheme to use ('E', 'D', or 'I')
-    L : int
-        Non-zero mean upper bound
-    rng : np.random.Generator, optional
-        Random number generator. If None, uses np.random.default_rng()
-
-    Returns
-    -------
-    np.ndarray
-        Array of p-values for the m hypotheses
-    """
-    if rng is None:
-        rng = np.random.default_rng()
-        
-    means = generate_means(m=m, m0=m0, scheme=scheme, L=L, rng=rng)
-    shifted_samples = means + samples
-    p_values = compute_p_values(shifted_samples)
-    return p_values
