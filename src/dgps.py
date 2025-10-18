@@ -163,9 +163,17 @@ def generate_means(m, m0, scheme, L, rng=None):
     m1 = m - m0
     counts = (weights / weights.sum()) * m1
     counts = np.round(counts).astype(int)
-    # adjust for rounding errors
     diff = m1 - counts.sum()
     counts[0] += diff
+    
+    # adjust for rounding errors
+    remainder = m1 - counts.sum()
+    if remainder > 0:
+        fractional = (weights / weights.sum()) - counts
+        for _ in range(remainder):
+            idx = np.argmax(fractional)
+            counts[idx] += 1
+            fractional[idx] = -1  # Mark as used
     
     levels = [L/4, L/2, 3*L/4, L]
     means = np.concatenate([
