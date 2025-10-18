@@ -4,26 +4,27 @@ import pandas as pd
 import itertools
 
 
-def run_scenario(samples, m0, L, scheme, method, alpha, rng=None):
+def run_scenario(samples, m0, L, scheme, method, alpha, metrics, rng=None):
     m = samples.shape[0]
     means = generate_means(m=m, m0=m0, scheme=scheme, L=L, rng=rng)
-    true_mask = (means != 0)
+    # uses property of Gaussian X ~ N(mu, 1) => X = mu + Z, Z ~ N(0,1)
     shifted_samples = samples + means
     p_values = compute_p_values(shifted_samples)
     rejected = method(p_values, alpha)
-    true_rejections = np.sum(rejected[true_mask])
-    return {
-        'm': m,
-        'm0': m0,
-        'L': L,
-        'scheme': scheme,
-        'method': method.name,
-        'true_rejections': true_rejections,
-        'n_rejected': rejected.sum()
-    }
+    
+    results = {'m': m,
+               'm0': m0,
+               'L': L,
+               'scheme': scheme,
+               'method': method.name}
+    
+    for eval_metric in metrics:
+        results[eval_metric.name] = eval_metric(rejected, means)
+
+    return results
 
 
-def run_simulation(m, m0, L, scheme, method, alpha, nsim=100, rng=None):
+def run_simulation(m, m0, L, scheme, method, alpha, metrics=None, nsim=100, rng=None):
     """Run simulation study for all combinations of parameters.
 
     Parameters
@@ -53,6 +54,9 @@ def run_simulation(m, m0, L, scheme, method, alpha, nsim=100, rng=None):
     if rng is None:
         rng = np.random.default_rng()
     
+    if metrics is None:
+        raise ValueError("At least one metric must be provided.")
+    
     if not isinstance(m, (list, np.ndarray)):
         m = [m]
     if not isinstance(m0, (list, np.ndarray)):
@@ -70,7 +74,14 @@ def run_simulation(m, m0, L, scheme, method, alpha, nsim=100, rng=None):
             samples = NormalGenerator(loc=0, scale=1).generate(m_i, rng=rng)
             for m0_i, L_i, scheme_i, method_i in itertools.product(m0, L, scheme, method):
                 m0_i = int(m_i*m0_i)
-                scenario_out = run_scenario(samples, m0_i, L_i, scheme_i, method_i, alpha, rng=rng)
+                scenario_out = run_scenario(samples=samples, 
+                                            m0=m0_i, 
+                                            L=L_i, 
+                                            scheme=scheme_i, 
+                                            method=method_i, 
+                                            alpha=alpha, 
+                                            metrics=metrics, 
+                                            rng=rng)
                 scenario_out['nsim'] = i + 1
                 out = pd.concat([out, pd.DataFrame(scenario_out, index=[0])], ignore_index=True)
     

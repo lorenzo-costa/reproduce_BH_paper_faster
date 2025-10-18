@@ -51,7 +51,7 @@ class Power(Metric):
 
     @property
     def name(self):
-        return "Statistical Power"
+        return "Power"
 
     def __call__(self, rejected, true_values):
         """Compute the statistical power.
@@ -76,3 +76,72 @@ class Power(Metric):
         power = np.mean(rejected[truth_mask]) if np.sum(truth_mask) > 0 else 0.0
         
         return power
+
+class TrueRejections(Metric):
+    """True Rejections metric.
+
+    True Rejections is defined as the total number of true alternative
+    hypotheses that are correctly rejected.
+    """
+
+    @property
+    def name(self):
+        return "True Rejections"
+
+    def __call__(self, rejected, true_values):
+        """Compute the number of true rejections.
+
+        True Rejections is defined as the total number of true alternative
+        hypotheses that are correctly rejected.
+
+        Parameters
+        ----------
+        rejected : np.ndarray
+            Boolean array indicating which hypotheses are rejected
+        true_values : np.ndarray
+            Array of true means for each hypothesis; non-zero indicates
+            true alternatives
+
+        Returns
+        -------
+        int
+            Number of true rejections
+        """
+        truth_mask = (true_values != 0)
+        true_rejections = np.sum(rejected[truth_mask])
+        
+        return true_rejections
+
+class RejectionsNumber(Metric):
+    """Total Rejections metric.
+
+    Total Rejections is defined as the total number of hypotheses
+    that are rejected.
+    """
+
+    @property
+    def name(self):
+        return "Total Rejections"
+
+    def __call__(self, rejected, true_values):
+        """Compute the total number of rejections.
+
+        Total Rejections is defined as the total number of hypotheses
+        that are rejected.
+
+        Parameters
+        ----------
+        rejected : np.ndarray
+            Boolean array indicating which hypotheses are rejected
+        true_values : np.ndarray
+            Array of true means for each hypothesis; non-zero indicates
+            true alternatives
+
+        Returns
+        -------
+        int
+            Total number of rejections
+        """
+        total_rejections = np.sum(rejected)
+        
+        return total_rejections

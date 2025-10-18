@@ -1,13 +1,7 @@
-"""Data generation classes for simulation studies.
-
-This module provides a generator for data from a Gaussian distribution as required 
-by the experiments. This is implemented to make the
-simulations scalable and extensible to other distributions.
-"""
+"""Data generation classes for simulation studies."""
 
 import numpy as np
 from abc import ABC, abstractmethod
-
 from scipy import stats
 
 
@@ -133,13 +127,12 @@ def generate_means(m, m0, scheme, L, rng=None):
         
     Examples
     --------
-    >>> means = generate_means(m=4, m0=2, scheme='E', L=4, rng=np.random.default_rng(42))
+    >>> means = generate_means(m=4, m0=1, scheme='E', L=4, rng=np.random.default_rng(42))
     >>> means
     array([0., 0., 1., 1.])
     >>> means = generate_means(m=4, m0=2, scheme='D', L=8, rng=np.random.default_rng(42))
     >>> means
     array([0., 0., 6., 8.])
-    
     """
     
     if not isinstance(m, int) or m <= 0:
@@ -176,7 +169,7 @@ def generate_means(m, m0, scheme, L, rng=None):
     
     levels = [L/4, L/2, 3*L/4, L]
     means = np.concatenate([
-        np.zeros(m - m1),
+        np.zeros(m0),
         np.repeat(levels, counts)])
     rng.shuffle(means)
     

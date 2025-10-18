@@ -67,6 +67,7 @@ class Bonferroni(MultipleTesting):
     """
 
     def __call__(self, p_values, alpha):
+        assert np.all((p_values >= 0) & (p_values <= 1)), "p-values must be between 0 and 1"
         m = len(p_values)
         threshold = alpha / m
         return p_values <=threshold
@@ -96,7 +97,6 @@ class BonferroniHochberg(MultipleTesting):
     """
     
     def __call__(self, p_values, alpha):
-        # this can be made faster with binary search-like procedure
         sorted_pvalues = np.sort(p_values)
         m = len(p_values)
         threshold = -1
@@ -148,6 +148,6 @@ class FalseDiscoveryRate(MultipleTesting):
 
     @property
     def name(self):
-        return "FDR Correction"
+        return "Benjamini-Hochberg Correction"
     
     
