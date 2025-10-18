@@ -8,6 +8,8 @@ simulations scalable and extensible to other distributions.
 import numpy as np
 from abc import ABC, abstractmethod
 
+from scipy import stats
+
 
 class DataGenerator(ABC):
     """Abstract base class for data generation.
@@ -15,7 +17,6 @@ class DataGenerator(ABC):
     All data generators must implement three methods:
     - generate(n): Create n samples from the distribution
     - name(): Return a descriptive name for reporting
-    - null_value(): Return the true parameter value under H0
     
     This ensures all generators can be used interchangeably in simulation
     studies without modifying the simulation code.
@@ -94,9 +95,11 @@ class NormalGenerator(DataGenerator):
         self.loc = loc
         self.scale = scale
     
-    def generate(self, n, rng=None):
+    def generate(self, n=None, rng=None):
         if rng is None:
             rng = np.random.default_rng()
+        if n is None:
+            n = self.loc.shape[0] if isinstance(self.loc, np.ndarray) else 1
         return rng.normal(self.loc, self.scale, n)
     
     @property
@@ -106,3 +109,100 @@ class NormalGenerator(DataGenerator):
     @property
     def null_value(self):
         return self.loc
+
+
+def generate_means(m, m0, scheme, L, rng=None):
+    """Generate a simulation scenario from a Gaussian sample.
+
+    Parameters
+    ----------
+    m : int
+        Number of hypotheses to test
+    m0 : int
+        Number of true null hypotheses
+    scheme : str
+        The testing scheme to use ('E', 'D', or 'I')
+    L : int
+        Non-zero mean upper bound
+    rng : np.random.Generator, optional
+        Random number generator. If None, uses np.random.default_rng()
+    Returns
+    -------
+    np.ndarray
+        Array of means for the m hypotheses
+        
+    Examples
+    --------
+    >>> means = generate_means(m=4, m0=2, scheme='E', L=4, rng=np.random.default_rng(42))
+    >>> means
+    array([0., 0., 1., 1.])
+    >>> means = generate_means(m=4, m0=2, scheme='D', L=8, rng=np.random.default_rng(42))
+    >>> means
+    array([0., 0., 6., 8.])
+    
+    """
+    
+    if not isinstance(m, int) or m <= 0:
+        raise ValueError("m must be a positive integer")
+    if not isinstance(L, int) or L <= 0:
+        raise ValueError("L must be a positive integer")
+    if not isinstance(m0, int) or m0 < 0 or m0 > m:
+        raise ValueError("m0 must be an integer between 0 and m inclusive")
+    if rng is None:
+        rng = np.random.default_rng()
+
+    if scheme == 'E':
+        weights = np.array([1, 1, 1, 1])
+    elif scheme == 'D':
+        weights = np.array([4, 3, 2, 1])
+    elif scheme == 'I':
+        weights = np.array([1, 2, 3, 4])
+    else:
+        raise ValueError("Invalid scheme. Choose from ['E', 'D', 'I']")
+    
+    m1 = m - m0
+    counts = (weights / weights.sum()) * m1
+    counts = np.round(counts).astype(int)
+    # adjust for rounding errors
+    diff = m1 - counts.sum()
+    counts[0] += diff
+    
+    levels = [L/4, L/2, 3*L/4, L]
+    means = np.concatenate([
+        np.zeros(m - m1),
+        np.repeat(levels, counts)])
+    np.random.shuffle(means)
+    
+    return means
+
+def compute_p_values(normal_samples):
+    return 2 * stats.norm.cdf(-np.abs(normal_samples))
+
+def generate_scenario(m, m0, scheme, L, rng=None):
+    """Generate a simulation scenario with p-values from Gaussian samples.
+
+    Parameters
+    ----------
+    m : int
+        Number of hypotheses to test
+    m0 : int
+        Number of true null hypotheses
+    scheme : str
+        The testing scheme to use ('E', 'D', or 'I')
+    L : int
+        Non-zero mean upper bound
+    rng : np.random.Generator, optional
+        Random number generator. If None, uses np.random.default_rng()
+
+    Returns
+    -------
+    np.ndarray
+        Array of p-values for the m hypotheses
+    """
+    if rng is None:
+        rng = np.random.default_rng()
+        
+    means = generate_means(sample=None, m=m, m0=m0, scheme=scheme, L=L, rng=rng)
+    samples = rng.normal(loc=means, scale=1.0, size=m)
+    p_values = compute_p_values(samples)
+    return p_values
