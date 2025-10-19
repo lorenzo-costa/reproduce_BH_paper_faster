@@ -1,4 +1,4 @@
-from dgps import NormalGenerator, generate_means, compute_p_values
+from src.dgps import NormalGenerator, generate_means, compute_p_values
 import numpy as np
 import pandas as pd
 import itertools
@@ -71,9 +71,11 @@ def run_simulation(m, m0_fraction, L, scheme, method, alpha, metrics=None, nsim=
         method = [method]
 
     out = pd.DataFrame()
+    samples_list = []
     for i in range(nsim):
         for m_i in m:
             samples = NormalGenerator(loc=0, scale=1).generate(m_i, rng=rng)
+            samples_list.append(samples)
             for m0_i, L_i, scheme_i, method_i in itertools.product(m0_fraction, L, scheme, method):
                 scenario_out = run_scenario(samples=samples, 
                                             m0_fraction=m0_i, 
@@ -86,5 +88,5 @@ def run_simulation(m, m0_fraction, L, scheme, method, alpha, metrics=None, nsim=
                 scenario_out['nsim'] = i + 1
                 out = pd.concat([out, pd.DataFrame(scenario_out, index=[0])], ignore_index=True)
     
-    return out
+    return out, samples_list
     

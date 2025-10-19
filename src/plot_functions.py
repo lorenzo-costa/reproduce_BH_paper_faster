@@ -170,7 +170,7 @@ def plot_individual(
     log_y_axis=True,
     log_x_axis=False,
     se_bands=True,
-    height=1.3,
+    height=4,
     aspect=1.3,
 ):
     """
@@ -229,7 +229,7 @@ def plot_individual(
             ax.set_title(title)
             ax.set_xlabel("Log " + x_axis if log_x_axis else x_axis)
             ax.set_ylabel("Log " + y_axis if log_y_axis else y_axis)
-            plt.tight_layout()
+            #plt.tight_layout()
             plt.legend(title="Method")
 
             if save_path is not None:
