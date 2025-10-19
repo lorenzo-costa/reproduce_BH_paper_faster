@@ -3,7 +3,7 @@ Script to run the simulation study
 """
 from src.simulation_functs import run_simulation
 from src.metrics import Power, TrueRejections, RejectionsNumber
-from src.methods import Bonferroni, BonferroniHochberg, FalseDiscoveryRate
+from src.methods import Bonferroni, BonferroniHochberg, BenjaminiHochberg
 import pickle
 
 import numpy as np
@@ -11,7 +11,7 @@ import numpy as np
 
 if __name__ == "__main__":
     nsim = 100
-    methods = [Bonferroni(), BonferroniHochberg(), FalseDiscoveryRate()]
+    methods = [Bonferroni(), BonferroniHochberg(), BenjaminiHochberg()]
     alpha = 0.05
     m = [4, 8, 16, 32, 64]
     m0 = [3/4, 1/2, 1/4, 0]

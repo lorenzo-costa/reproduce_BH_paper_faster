@@ -1,6 +1,7 @@
 import pytest
 from ..src.dgps import NormalGenerator, compute_p_values, generate_means
-from ..src.methods import BonferroniHochberg, FalseDiscoveryRate, Bonferroni
+from ..src.methods import BonferroniHochberg, BenjaminiHochberg, Bonferroni
+from ..src.metrics import Power
 import numpy as np
 
 # Test the normal data generator
@@ -23,7 +24,7 @@ def test_normal_data_generator():
 @pytest.mark.parametrize("method_class, expected_name", [
     (Bonferroni, "Bonferroni Correction"),
     (BonferroniHochberg, "Bonferroni-Hochberg Correction"),
-    (FalseDiscoveryRate, "Benjamini-Hochberg Correction"),
+    (BenjaminiHochberg, "Benjamini-Hochberg Correction"),
 ])
 def test_method_names(method_class, expected_name):
     method = method_class()
@@ -87,11 +88,11 @@ def test_bonferroni_hochberg_correction(pvals, alpha, expected):
     ([0.001, 0.02, 0.025, 0.03, 0.2], 0.05, [True, True, True, True, False]),
     ([0.009, 0.5, 0.6, 0.7, 0.8], 0.05, [True, False, False, False, False])
 ])
-def test_false_discovery_rate_correction(pvals, alpha, expected):
-    fdr = FalseDiscoveryRate()
+def test_benjamini_hochberg_correction(pvals, alpha, expected):
+    bh = BenjaminiHochberg()
     pvals_array = np.array(pvals)
     expected_array = np.array(expected)
-    result = fdr(pvals_array, alpha)
+    result = bh(pvals_array, alpha)
     assert np.array_equal(result, expected_array)
 
 # test generate_means function
@@ -137,3 +138,17 @@ def test_generate_means(m, m0, scheme, L, expected):
 def test_compute_p_values(normal_samples, expected):
     pvals = compute_p_values(normal_samples)
     assert np.allclose(pvals, expected, atol=1e-4)
+
+# test Power metric
+@pytest.mark.parametrize("rejections, true_alternatives, expected", [
+    (np.array([True, True, False, False]), np.array([True, False, True, False]), 0.5),
+    (np.array([True, True, True, False]), np.array([True, True, False, False]), 1.0),
+    (np.array([True, True, True, True]), np.array([True, True, True, False]), 1.0),
+    (np.array([False, False, False, False]), np.array([True, True, False, False]), 0.0),
+    (np.array([True, False, True, False]), np.array([False, False, False, False]), 0.0),
+])
+def test_power_metric(rejections, true_alternatives, expected):
+    result = Power()(rejections, true_alternatives)
+    assert np.isclose(result, expected, atol=1e-4)
+
+

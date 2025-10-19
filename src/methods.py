@@ -113,8 +113,8 @@ class BonferroniHochberg(MultipleTesting):
         return "Bonferroni-Hochberg Correction"
 
 
-class FalseDiscoveryRate(MultipleTesting):
-    """Bonferroni-Hochberg correction for multiple testing.
+class BenjaminiHochberg(MultipleTesting):
+    """Benjamini-Hochberg correction for multiple testing.
 
     This is a step-up method introduced in Hochberg, 1988, which controls the
     family-wise error rate (FWER) under the assumption of independence of the p-values.
