@@ -8,8 +8,6 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import yaml
 
-
-output_path = "results/figures/"
 if __name__ == "__main__":
     with open("config.yaml", "r") as f:
         cfg = yaml.safe_load(f)
@@ -22,6 +20,7 @@ if __name__ == "__main__":
     
     colors = cfg['line_colors']
     linestyles = cfg['linestyles']
+    name_conversion = cfg['name_conversion']
 
     print("Generating plot...")
     plot_grid(
@@ -36,4 +35,5 @@ if __name__ == "__main__":
         save_path=output_path + "power_grid",
         colors=colors,
         linestyles=linestyles,
+        name_conversion=name_conversion
     )

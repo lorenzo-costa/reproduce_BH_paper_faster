@@ -137,6 +137,7 @@ def plot_individual(
     se_bands=True,
     height=4,
     aspect=1.3,
+    name_conversion=None,
 ):
     """
     Plot individual lineplots for each combination of aggregate_x and aggregate_y.
@@ -180,19 +181,28 @@ def plot_individual(
 
             if len(grouping_vars) == 2:
                 title = (
-                    f"{grouping_vars[0].replace('_', ' ').title()}: {group_values[0]}, "
-                    f"{grouping_vars[1].replace('_', ' ').title()}: {group_values[1]}"
+                    f"{name_conversion.get(grouping_vars[0], grouping_vars[0]).replace('_', ' ').title()}: {group_values[0]}, "
+                    f"{name_conversion.get(grouping_vars[1], grouping_vars[1]).replace('_', ' ').title()}: {group_values[1]}"
                 )
             elif len(grouping_vars) == 1:
                 title = (
-                    f"{grouping_vars[0].replace('_', ' ').title()}: {group_values[0]}"
+                    f"{name_conversion.get(grouping_vars[0], grouping_vars[0]).replace('_', ' ').title()}: {group_values[0]}"
                 )
             else:
-                title = f"{x_axis} vs {y_axis}"
+                title = (
+                    f"{name_conversion.get(x_axis, x_axis).replace('_', ' ').title()} vs "
+                    f"{name_conversion.get(y_axis, y_axis).replace('_', ' ').title()}"
+                )
 
             ax.set_title(title)
-            ax.set_xlabel("Log " + x_axis if log_x_axis else x_axis)
-            ax.set_ylabel("Log " + y_axis if log_y_axis else y_axis)
+            xlabel = (
+                name_conversion.get(x_axis, x_axis).replace("_", " ").title()
+            )
+            ylabel = (
+                name_conversion.get(y_axis, y_axis).replace("_", " ").title()
+            )
+            ax.set_xlabel("Log " + xlabel if log_x_axis else xlabel)
+            ax.set_ylabel("Log " + ylabel if log_y_axis else ylabel)
             # plt.tight_layout()
             plt.legend(title="Method")
 
@@ -228,6 +238,7 @@ def plot_grid(
     se_bands=True,
     height=1.3,
     aspect=1.3,
+    name_conversion=None,
 ):
     """
     Plot a grid of RMSE lineplots faceted by x_axis and y_axis.
@@ -278,41 +289,48 @@ def plot_grid(
         ax.set_xlabel("")
         ax.set_ylabel("")
         ax.set_title("")
+        
     # Set x and y axis labels only in central places
     x_label = (
-        "Log " + aggregate_x.replace("_", " ").title()
+        "Log " + name_conversion.get(x_axis, x_axis).replace("_", " ").title()
         if log_x_axis
-        else aggregate_x.replace("_", " ").title()
+        else name_conversion.get(x_axis, x_axis).replace("_", " ").title()
     )
     g.axes[-1, g.axes.shape[1] // 2].set_xlabel(x_label)
+    
     y_label = (
-        "Log " + aggregate_y.replace("_", " ").title()
+        "Log " + name_conversion.get(y_axis, y_axis).replace("_", " ").title()
         if log_y_axis
-        else aggregate_y.replace("_", " ").title()
+        else name_conversion.get(y_axis, y_axis).replace("_", " ").title()
     )
+    
     g.axes[g.axes.shape[0] // 2, 0].set_ylabel(y_label)
-    # g.axes[-1, 0].set_xticks(list(grouped_stats[aggregate_x].unique()))
-    # Set column facet titles (preserve capitalization for SNR)
+   
+   
+    # Set column facet titles
     for ax in range(g.axes.shape[1]):
-        title = f"{aggregate_x.replace('_', ' ').title()}: {g.col_names[ax]}"
+        title = (
+            f"{name_conversion.get(aggregate_x, aggregate_x).replace('_', ' ').title()}: {g.col_names[ax]}"
+        )
         g.axes[0, ax].set_title(title)
-    # Set custom row facet labels with preserved SNR capitalization
+    # Set custom row facet labels 
     for ax in range(g.axes.shape[0]):
-        text = f"{aggregate_y.replace('_', ' ').title()}: {g.row_names[ax]}"
+        text = f"{int(g.row_names[ax]*100)}\% {name_conversion.get(aggregate_y, aggregate_y).replace('_', ' ').title()}"
+        # text = f"{name_conversion.get(aggregate_y, aggregate_y).replace('_', ' ').title()}: {g.row_names[ax]}"
         g.axes[ax, -1].texts[0].set_text(text)
     # Set figure title at the top
     if log_y_axis is True:
         g.figure.suptitle(
-            "Log " + x_axis + " vs Log " + y_axis
+            "Log " + name_conversion.get(x_axis, x_axis) + " vs Log " + name_conversion.get(y_axis, y_axis)
             if log_x_axis
-            else log_x_axis + " vs Log " + y_axis,
+            else name_conversion.get(x_axis, x_axis) + " vs Log " + name_conversion.get(y_axis, y_axis),
             y=1.02,
         )
     else:
         g.figure.suptitle(
-            "Log " + x_axis + " vs " + y_axis
+            "Log " + name_conversion.get(x_axis, x_axis) + " vs " + name_conversion.get(y_axis, y_axis)
             if log_x_axis
-            else x_axis + " vs " + y_axis,
+            else name_conversion.get(x_axis, x_axis) + " vs " + name_conversion.get(y_axis, y_axis),
             y=1.02,
         )
     g.add_legend()

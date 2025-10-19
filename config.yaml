@@ -52,3 +52,10 @@ linestyles:
   "Bonferroni Correction": "-"
   "Bonferroni-Hochberg Correction": "--"
   "Benjamini-Hochberg Correction": "-."
+
+name_conversion:
+  m: "Number of Tested Hypotheses"
+  m0_fraction: "Null"
+  scheme: "Testing scheme"
+  method: "Multiple testing method"
+  Power: "Average Power"
