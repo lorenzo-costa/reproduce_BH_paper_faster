@@ -8,7 +8,7 @@ import pandas as pd
 output_path = "results/figures/"
 if __name__ == "__main__":
     results = pd.read_csv("results/raw/simulation_results.csv")
-    
+
     print("Generating plot...")
     plot_grid(
         results=results,
@@ -19,5 +19,5 @@ if __name__ == "__main__":
         height=2,
         log_y_axis=False,
         log_x_axis=False,
-        save_path = output_path+"power_grid"
+        save_path=output_path + "power_grid",
     )

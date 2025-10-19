@@ -3,14 +3,15 @@
 import numpy as np
 from abc import ABC, abstractmethod
 
+
 class Metric(ABC):
     """Abstract base class for evaluation metrics.
-    
+
     All metrics must implement two methods:
     - __call__(rejected, true_values): Compute the metric given rejections and true values
     - name(): Return a descriptive name for reporting
     """
-    
+
     @abstractmethod
     def __call__(self, rejected, true_values):
         """Compute the evaluation metric.
@@ -29,7 +30,7 @@ class Metric(ABC):
             Computed metric value
         """
         pass
-    
+
     @property
     @abstractmethod
     def name(self):
@@ -42,17 +43,18 @@ class Metric(ABC):
         """
         pass
 
+
 class Power(Metric):
     """Statistical power metric.
 
     Power is defined as the proportion of true alternative hypotheses
     that are correctly rejected.
-    
+
     Returns
     -------
     float
         Statistical power
-    
+
     Examples
     --------
     >>> power_metric = Power()
@@ -86,22 +88,23 @@ class Power(Metric):
         float
             Statistical power
         """
-        truth_mask = (true_values != 0)
+        truth_mask = true_values != 0
         power = np.mean(rejected[truth_mask]) if np.sum(truth_mask) > 0 else 0.0
-        
+
         return power
+
 
 class TrueRejections(Metric):
     """True Rejections metric.
 
     True Rejections is defined as the total number of true alternative
     hypotheses that are correctly rejected.
-    
+
     Returns
     -------
     int
         Number of true rejections
-    
+
     Examples
     --------
     >>> tr_metric = TrueRejections()
@@ -135,22 +138,23 @@ class TrueRejections(Metric):
         int
             Number of true rejections
         """
-        truth_mask = (true_values != 0)
+        truth_mask = true_values != 0
         true_rejections = np.sum(rejected[truth_mask])
-        
+
         return true_rejections
+
 
 class RejectionsNumber(Metric):
     """Total Rejections metric.
 
     Total Rejections is defined as the total number of hypotheses
     that are rejected.
-    
+
     Returns
     -------
     int
         Total number of rejections
-    
+
     Examples
     --------
     >>> tr_metric = RejectionsNumber()
@@ -185,5 +189,5 @@ class RejectionsNumber(Metric):
             Total number of rejections
         """
         total_rejections = np.sum(rejected)
-        
+
         return total_rejections

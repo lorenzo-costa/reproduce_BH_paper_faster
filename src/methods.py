@@ -8,9 +8,10 @@ the same interface, making them interchangeable in simulation studies.
 from abc import ABC, abstractmethod
 import numpy as np
 
+
 class MultipleTesting(ABC):
     """Abstract base class for multiple testing procedures.
-    
+
     All statistical test must implement two methods:
     - __call__(p_values, alpha): Perform multiple testing and return reject True/False
     - name(): Returns descriptive name
@@ -33,7 +34,7 @@ class MultipleTesting(ABC):
             Boolean array indicating which hypotheses are rejected
         """
         pass
-    
+
     @property
     @abstractmethod
     def name(self):
@@ -45,6 +46,7 @@ class MultipleTesting(ABC):
             Human-readable name of the procedure
         """
         pass
+
 
 class Bonferroni(MultipleTesting):
     """Bonferroni correction for multiple testing.
@@ -67,19 +69,22 @@ class Bonferroni(MultipleTesting):
     """
 
     def __call__(self, p_values, alpha):
-        assert np.all((p_values >= 0) & (p_values <= 1)), "p-values must be between 0 and 1"
+        assert np.all((p_values >= 0) & (p_values <= 1)), (
+            "p-values must be between 0 and 1"
+        )
         m = len(p_values)
         threshold = alpha / m
-        return p_values <=threshold
+        return p_values <= threshold
 
     @property
     def name(self):
         return "Bonferroni Correction"
 
+
 class BonferroniHochberg(MultipleTesting):
     """Bonferroni-Hochberg correction for multiple testing.
 
-    This is a step-up method introduced in Hochberg, 1988, which controls the 
+    This is a step-up method introduced in Hochberg, 1988, which controls the
     family-wise error rate (FWER) under the assumption of independence of the p-values.
     It works by sorting the p-values, finding the largest k such that
     p_(k) <= k/(m-k+1) * alpha and rejecting all hypothesis H_(i) i=1, ..., k
@@ -95,17 +100,17 @@ class BonferroniHochberg(MultipleTesting):
     >>> bonf.name
     'Bonferroni Correction'
     """
-    
+
     def __call__(self, p_values, alpha):
         sorted_pvalues = np.sort(p_values)
         m = len(p_values)
         threshold = -1
-        for k in range(m-1, -1, -1):
+        for k in range(m - 1, -1, -1):
             # add one because of zero-based indexing of python
-            if sorted_pvalues[k] <= alpha / (m-k):
+            if sorted_pvalues[k] <= alpha / (m - k):
                 threshold = sorted_pvalues[k]
                 break
-        
+
         return p_values <= threshold
 
     @property
@@ -118,7 +123,7 @@ class BenjaminiHochberg(MultipleTesting):
 
     This is a step-up method introduced in Benjamini and Hochberg, 1995, which
     controls the false discovery rate (FDR) under the assumption of independence
-    of the test statistics. It works by sorting the p-values, finding the largest k 
+    of the test statistics. It works by sorting the p-values, finding the largest k
     such that p_(k) <= k/m * alpha and rejecting all hypothesis with p_(i)<=p_(k)
 
     Examples
@@ -132,21 +137,19 @@ class BenjaminiHochberg(MultipleTesting):
     >>> bonf.name
     'Benjamini-Hochberg Correction'
     """
-    
+
     def __call__(self, p_values, alpha):
         sorted_pvalues = np.sort(p_values)
         m = len(p_values)
         threshold = -1
-        for k in range(m-1, -1, -1):
+        for k in range(m - 1, -1, -1):
             # add one because of zero-based indexing of python
-            if sorted_pvalues[k] <= alpha * (k+1)/m:
+            if sorted_pvalues[k] <= alpha * (k + 1) / m:
                 threshold = sorted_pvalues[k]
                 break
-        
+
         return p_values <= threshold
 
     @property
     def name(self):
         return "Benjamini-Hochberg Correction"
-    
-    

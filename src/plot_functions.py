@@ -29,16 +29,16 @@ custom_rcparams = {
 
 # Default color mappings for methods
 defaults_colors = {
-    "Bonferroni Correction": "#00202e", 
-    "Bonferroni-Hochberg Correction": "#bc5090", 
-    "Benjamini-Hochberg Correction": "#ff8531"
+    "Bonferroni Correction": "#00202e",
+    "Bonferroni-Hochberg Correction": "#bc5090",
+    "Benjamini-Hochberg Correction": "#ff8531",
 }
 
 # Default linestyles for methods
 linestyles = {
-    "Bonferroni Correction": "-", 
-    "Bonferroni-Hochberg Correction": "--", 
-    "Benjamini-Hochberg Correction": "-."
+    "Bonferroni Correction": "-",
+    "Bonferroni-Hochberg Correction": "--",
+    "Benjamini-Hochberg Correction": "-.",
 }
 
 
@@ -54,10 +54,10 @@ def plot_with_bands(x_axis, y_axis, **kwargs):
     y_axis : str
         The name of the column to be used for the y-axis.
     factors : list, optional
-        A list of column names to be used as additional factors for grouping, 
+        A list of column names to be used as additional factors for grouping,
         by default None
     plot_bands : str, optional
-        Name of the column containing the standard error for the y-axis values, 
+        Name of the column containing the standard error for the y-axis values,
         if None no bands are drawn, by default None
     """
     data = kwargs.pop("data")
@@ -66,16 +66,16 @@ def plot_with_bands(x_axis, y_axis, **kwargs):
 
     ax = plt.gca()
     hue_variable = factors[0] if factors is not None and len(factors) >= 1 else None
-    
+
     if hue_variable is not None:
         for hue_var in data[hue_variable].unique():
             subset = data[data[hue_variable] == hue_var].sort_values(x_axis)
             line = ax.plot(
-                subset[x_axis], 
-                subset[y_axis], 
-                marker="o", 
-                linestyle=linestyles[hue_var], 
-                label=hue_var
+                subset[x_axis],
+                subset[y_axis],
+                marker="o",
+                linestyle=linestyles[hue_var],
+                label=hue_var,
             )
             color = line[0].get_color()
 
@@ -91,11 +91,7 @@ def plot_with_bands(x_axis, y_axis, **kwargs):
         # assume single line
         subset = data.sort_values(x_axis)
         line = ax.plot(
-            subset[x_axis], 
-            subset[y_axis], 
-            marker="o", 
-            linestyle='-', 
-            label=None
+            subset[x_axis], subset[y_axis], marker="o", linestyle="-", label=None
         )
         color = line[0].get_color()
 
@@ -107,17 +103,12 @@ def plot_with_bands(x_axis, y_axis, **kwargs):
                 alpha=0.2,
                 color=color,
             )
-        
+
 
 def aggregate_results(
-    results, 
-    y_axis, 
-    x_axis, 
-    factors=None, 
-    log_x_axis=True, 
-    log_y_axis=False
+    results, y_axis, x_axis, factors=None, log_x_axis=True, log_y_axis=False
 ):
-    """Aggregate 
+    """Aggregate
 
     Parameters
     ----------
@@ -141,13 +132,11 @@ def aggregate_results(
     """
     if factors is None:
         factors = []
-    
+
     grouping = [x_axis] + factors
 
     grouped_stats = (
-        results.groupby(grouping)
-        .agg({y_axis: ["mean", "sem"]})
-        .reset_index()
+        results.groupby(grouping).agg({y_axis: ["mean", "sem"]}).reset_index()
     )
     grouped_stats.columns = grouping + [
         f"{y_axis}_mean",
@@ -161,10 +150,9 @@ def aggregate_results(
         )
 
     if log_x_axis is True:
-        grouped_stats[x_axis] = np.log10(
-            grouped_stats[x_axis]
-        )
+        grouped_stats[x_axis] = np.log10(grouped_stats[x_axis])
     return grouped_stats
+
 
 def plot_individual(
     results,
@@ -188,10 +176,10 @@ def plot_individual(
         colors = defaults_colors
     if save_path is not None:
         os.makedirs(os.path.dirname(save_path), exist_ok=True)
-    
+
     if factors is None:
         factors = []
-    
+
     hue_variable = factors[0] if len(factors) >= 1 else None
     grouping_vars = factors[1:] if len(factors) >= 2 else []
 
@@ -208,18 +196,18 @@ def plot_individual(
         for group_values, data_subset in grouped_stats.groupby(grouping_vars):
             if not isinstance(group_values, tuple):
                 group_values = (group_values,)
-            
+
             fig, ax = plt.subplots(figsize=(height * aspect, height))
 
             plot_with_bands(
                 data=data_subset,
                 x_axis=x_axis,
-                y_axis=y_axis+"_mean",
+                y_axis=y_axis + "_mean",
                 factors=factors,
-                plot_bands=y_axis+"_sem" if se_bands else None,
+                plot_bands=y_axis + "_sem" if se_bands else None,
                 ax=ax,
             )
-            
+
             if len(grouping_vars) == 2:
                 title = (
                     f"{grouping_vars[0].replace('_', ' ').title()}: {group_values[0]}, "
@@ -231,11 +219,11 @@ def plot_individual(
                 )
             else:
                 title = f"{x_axis} vs {y_axis}"
-            
+
             ax.set_title(title)
             ax.set_xlabel("Log " + x_axis if log_x_axis else x_axis)
             ax.set_ylabel("Log " + y_axis if log_y_axis else y_axis)
-            #plt.tight_layout()
+            # plt.tight_layout()
             plt.legend(title="Method")
 
             if save_path is not None:
@@ -289,14 +277,14 @@ def plot_grid(
     hue_variable = factors[0] if len(factors) >= 3 else None
     aggregate_x = factors[1] if len(factors) >= 3 else factors[0]
     aggregate_y = factors[2] if len(factors) >= 3 else factors[1]
-    
+
     # Sort aggregate_y values in descending order so largest appears on top
     grouped_stats[aggregate_y] = pd.Categorical(
         grouped_stats[aggregate_y],
         categories=sorted(grouped_stats[aggregate_y].unique(), reverse=True),
-        ordered=True
+        ordered=True,
     )
-    
+
     g = sns.FacetGrid(
         grouped_stats,
         row=aggregate_y,
@@ -310,9 +298,9 @@ def plot_grid(
     g.map_dataframe(
         plot_with_bands,
         x_axis=x_axis,
-        y_axis=y_axis+"_mean",
+        y_axis=y_axis + "_mean",
         factors=factors,
-        plot_bands=y_axis+"_sem" if se_bands else None,
+        plot_bands=y_axis + "_sem" if se_bands else None,
     )
     # Remove default x/y axis labels and tick labels from all subplots
     for ax in g.axes.flat:
@@ -321,15 +309,15 @@ def plot_grid(
         ax.set_title("")
     # Set x and y axis labels only in central places
     x_label = (
-        "Log " + aggregate_x.replace('_', ' ').title()
+        "Log " + aggregate_x.replace("_", " ").title()
         if log_x_axis
-        else aggregate_x.replace('_', ' ').title()
+        else aggregate_x.replace("_", " ").title()
     )
     g.axes[-1, g.axes.shape[1] // 2].set_xlabel(x_label)
     y_label = (
-        "Log " + aggregate_y.replace('_', ' ').title()
+        "Log " + aggregate_y.replace("_", " ").title()
         if log_y_axis
-        else aggregate_y.replace('_', ' ').title()
+        else aggregate_y.replace("_", " ").title()
     )
     g.axes[g.axes.shape[0] // 2, 0].set_ylabel(y_label)
     # g.axes[-1, 0].set_xticks(list(grouped_stats[aggregate_x].unique()))
@@ -344,16 +332,16 @@ def plot_grid(
     # Set figure title at the top
     if log_y_axis is True:
         g.figure.suptitle(
-            "Log "+x_axis+" vs Log "+y_axis
+            "Log " + x_axis + " vs Log " + y_axis
             if log_x_axis
-            else log_x_axis+" vs Log "+y_axis,
+            else log_x_axis + " vs Log " + y_axis,
             y=1.02,
         )
     else:
         g.figure.suptitle(
-            "Log "+x_axis+" vs "+y_axis
+            "Log " + x_axis + " vs " + y_axis
             if log_x_axis
-            else x_axis+" vs "+y_axis,
+            else x_axis + " vs " + y_axis,
             y=1.02,
         )
     g.add_legend()
@@ -364,6 +352,7 @@ def plot_grid(
         plt.show()
     plt.close()
     return g
+
 
 def plot_boxplot(
     results,
@@ -428,4 +417,3 @@ def plot_boxplot(
     else:
         plt.show()
     plt.close()
-

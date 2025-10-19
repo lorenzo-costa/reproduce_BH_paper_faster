@@ -4,29 +4,34 @@ import pandas as pd
 import itertools
 from tqdm import tqdm
 
+
 def run_scenario(samples, m0_fraction, L, scheme, method, alpha, metrics, rng=None):
     m = samples.shape[0]
-    m0 = int(m*m0_fraction)
+    m0 = int(m * m0_fraction)
     means = generate_means(m=m, m0=m0, scheme=scheme, L=L, rng=rng)
     # uses property of Gaussian X ~ N(mu, 1) => X = mu + Z, Z ~ N(0,1)
     shifted_samples = samples + means
     p_values = compute_p_values(shifted_samples)
     rejected = method(p_values, alpha)
-    
-    results = {'m': m,
-               'm0_fraction': m0_fraction,
-               'm0': m0,
-               'L': L,
-               'scheme': scheme,
-               'method': method.name}
-    
+
+    results = {
+        "m": m,
+        "m0_fraction": m0_fraction,
+        "m0": m0,
+        "L": L,
+        "scheme": scheme,
+        "method": method.name,
+    }
+
     for eval_metric in metrics:
         results[eval_metric.name] = eval_metric(rejected, means)
 
     return results
 
 
-def run_simulation(m, m0_fraction, L, scheme, method, alpha, metrics=None, nsim=100, rng=None):
+def run_simulation(
+    m, m0_fraction, L, scheme, method, alpha, metrics=None, nsim=100, rng=None
+):
     """Run simulation study for all combinations of parameters.
 
     Parameters
@@ -55,10 +60,10 @@ def run_simulation(m, m0_fraction, L, scheme, method, alpha, metrics=None, nsim=
     """
     if rng is None:
         rng = np.random.default_rng()
-    
+
     if metrics is None:
         raise ValueError("At least one metric must be provided.")
-    
+
     if not isinstance(m, (list, np.ndarray)):
         m = [m]
     if not isinstance(m0_fraction, (list, np.ndarray)):
@@ -69,7 +74,7 @@ def run_simulation(m, m0_fraction, L, scheme, method, alpha, metrics=None, nsim=
         scheme = [scheme]
     if not isinstance(method, (list, np.ndarray)):
         method = [method]
-        
+
     total_scenarios = len(m) * len(m0_fraction) * len(L) * len(scheme) * len(method)
     total_runs = nsim * total_scenarios
 
@@ -80,18 +85,23 @@ def run_simulation(m, m0_fraction, L, scheme, method, alpha, metrics=None, nsim=
             for m_i in m:
                 samples = NormalGenerator(loc=0, scale=1).generate(m_i, rng=rng)
                 samples_list.append(samples)
-                for m0_i, L_i, scheme_i, method_i in itertools.product(m0_fraction, L, scheme, method):
-                    scenario_out = run_scenario(samples=samples, 
-                                                m0_fraction=m0_i, 
-                                                L=L_i, 
-                                                scheme=scheme_i, 
-                                                method=method_i, 
-                                                alpha=alpha, 
-                                                metrics=metrics, 
-                                                rng=rng)
-                    scenario_out['nsim'] = i + 1
-                    out = pd.concat([out, pd.DataFrame(scenario_out, index=[0])], ignore_index=True)
+                for m0_i, L_i, scheme_i, method_i in itertools.product(
+                    m0_fraction, L, scheme, method
+                ):
+                    scenario_out = run_scenario(
+                        samples=samples,
+                        m0_fraction=m0_i,
+                        L=L_i,
+                        scheme=scheme_i,
+                        method=method_i,
+                        alpha=alpha,
+                        metrics=metrics,
+                        rng=rng,
+                    )
+                    scenario_out["nsim"] = i + 1
+                    out = pd.concat(
+                        [out, pd.DataFrame(scenario_out, index=[0])], ignore_index=True
+                    )
                     pbar.update(1)
-    
+
     return out, samples_list
-    
