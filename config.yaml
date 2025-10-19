@@ -1,0 +1,54 @@
+# Simulation configuration file
+
+
+# --- general ---
+results_dir: "results/"
+data_dir: "data/"
+figures_dir: "figures/"
+
+# --- sim params ---
+nsim: 100
+alpha: 0.05
+m: [4, 8, 16, 32, 64]
+m0: [0.75, 0.5, 0.25, 0.0]
+L: [5, 10]
+scheme: ["E", "I", "D"]
+rng_seed: 10
+
+methods:
+  - Bonferroni
+  - BonferroniHochberg
+  - BenjaminiHochberg
+
+metrics:
+  - Power
+  - TrueRejections
+  - RejectionsNumber
+
+
+# --- Plotting configuration ---
+rcparams:
+  text.usetex: true
+  font.family: serif
+  font.serif: ["Computer Modern Roman"]
+  font.size: 9
+  figure.titlesize: 11
+  legend.fontsize: 10
+  legend.title_fontsize: 10.5
+  lines.linewidth: 1
+  axes.linewidth: 0.5
+  axes.facecolor: white
+  axes.grid: false
+  lines.markersize: 3
+  xtick.labelsize: 8
+  ytick.labelsize: 8
+
+line_colors:
+  "Bonferroni Correction": "#00202e"
+  "Bonferroni-Hochberg Correction": "#bc5090"
+  "Benjamini-Hochberg Correction": "#ff8531"
+
+linestyles:
+  "Bonferroni Correction": "-"
+  "Bonferroni-Hochberg Correction": "--"
+  "Benjamini-Hochberg Correction": "-."

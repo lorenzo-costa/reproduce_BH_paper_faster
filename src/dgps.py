@@ -169,20 +169,34 @@ def generate_means(m, m0, scheme, L, rng=None):
 
     # Adjust for rounding errors
     diff = m1 - counts.sum()
-    if scheme in ["E", "I"]:
-        if diff > 0:
-            for i in range(diff):
-                counts[-1 - i] += 1
-        elif diff < 0:
-            for i in range(-diff):
-                counts[i] -= 1
-    elif scheme == "D":
-        if diff > 0:
-            for i in range(diff):
-                counts[i] += 1
-        elif diff < 0:
-            for i in range(-diff):
-                counts[-1 - i] -= 1
+    if diff > 0:
+        for i in range(diff):
+            counts[-1 - i] += 1
+    elif diff < 0:
+        for i in range(-diff):
+            counts[i] -= 1
+    
+    # this is what i belive the code should be but it does not reproduce paper 
+    # implementation. i think the different is in how they handle the case of m 
+    # small. e.g. for m=4 and m0=2 my code would give [1, 2, 0, 0] but the code 
+    # that correctly repoduces the paper results gives [3, 4, 0, 0]
+    # the difference is tha with my code I get very low power for m=4, with theirs
+    # i get power almost 1
+    # diff = m1 - counts.sum()
+    # if scheme in ["E", "I"]:
+    #     if diff > 0:
+    #         for i in range(diff):
+    #             counts[-1 - i] += 1
+    #     elif diff < 0:
+    #         for i in range(-diff):
+    #             counts[i] -= 1
+    # elif scheme in "D":
+    #     if diff > 0:
+    #         for i in range(diff):
+    #             counts[i] += 1
+    #     elif diff < 0:
+    #         for i in range(-diff):
+    #             counts[-1 - i] -= 1
 
     idx = 0
     for pos, count in zip(levels, counts):

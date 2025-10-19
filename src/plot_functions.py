@@ -9,102 +9,6 @@ import logging
 # Suppress matplotlib category warning for boxplots
 logging.getLogger("matplotlib.category").setLevel(logging.ERROR)
 
-# Custom plot rcParams
-custom_rcparams = {
-    "text.usetex": True,
-    "font.family": "serif",
-    "font.serif": ["Computer Modern Roman"],
-    "font.size": 9,
-    "figure.titlesize": 11,
-    "legend.fontsize": 10,
-    "legend.title_fontsize": 10.5,
-    "lines.linewidth": 1,
-    "axes.linewidth": 0.5,
-    "axes.facecolor": "white",
-    "axes.grid": False,
-    "lines.markersize": 3,
-    "xtick.labelsize": 8,
-    "ytick.labelsize": 8,
-}
-
-# Default color mappings for methods
-defaults_colors = {
-    "Bonferroni Correction": "#00202e",
-    "Bonferroni-Hochberg Correction": "#bc5090",
-    "Benjamini-Hochberg Correction": "#ff8531",
-}
-
-# Default linestyles for methods
-linestyles = {
-    "Bonferroni Correction": "-",
-    "Bonferroni-Hochberg Correction": "--",
-    "Benjamini-Hochberg Correction": "-.",
-}
-
-
-def plot_with_bands(x_axis, y_axis, **kwargs):
-    """Plot lines with confidence/error bands for each method.
-
-    Parameters
-    ----------
-    data : pd.DataFrame
-        DataFrame containing the data to plot.
-    x_axis : str
-        The name of the column to be used for the x-axis.
-    y_axis : str
-        The name of the column to be used for the y-axis.
-    factors : list, optional
-        A list of column names to be used as additional factors for grouping,
-        by default None
-    plot_bands : str, optional
-        Name of the column containing the standard error for the y-axis values,
-        if None no bands are drawn, by default None
-    """
-    data = kwargs.pop("data")
-    factors = kwargs.pop("factors", None)
-    plot_bands = kwargs.pop("plot_bands", None)
-
-    ax = plt.gca()
-    hue_variable = factors[0] if factors is not None and len(factors) >= 1 else None
-
-    if hue_variable is not None:
-        for hue_var in data[hue_variable].unique():
-            subset = data[data[hue_variable] == hue_var].sort_values(x_axis)
-            line = ax.plot(
-                subset[x_axis],
-                subset[y_axis],
-                marker="o",
-                linestyle=linestyles[hue_var],
-                label=hue_var,
-            )
-            color = line[0].get_color()
-
-            if plot_bands is not None:
-                ax.fill_between(
-                    subset[x_axis],
-                    subset[y_axis] - subset[plot_bands],
-                    subset[y_axis] + subset[plot_bands],
-                    alpha=0.2,
-                    color=color,
-                )
-    else:
-        # assume single line
-        subset = data.sort_values(x_axis)
-        line = ax.plot(
-            subset[x_axis], subset[y_axis], marker="o", linestyle="-", label=None
-        )
-        color = line[0].get_color()
-
-        if plot_bands is not None:
-            ax.fill_between(
-                subset[x_axis],
-                subset[y_axis] - subset[plot_bands],
-                subset[y_axis] + subset[plot_bands],
-                alpha=0.2,
-                color=color,
-            )
-
-
 def aggregate_results(
     results, y_axis, x_axis, factors=None, log_x_axis=True, log_y_axis=False
 ):
@@ -154,12 +58,79 @@ def aggregate_results(
     return grouped_stats
 
 
+def plot_with_bands(x_axis, y_axis, **kwargs):
+    """Plot lines with confidence/error bands for each method.
+
+    Parameters
+    ----------
+    data : pd.DataFrame
+        DataFrame containing the data to plot.
+    x_axis : str
+        The name of the column to be used for the x-axis.
+    y_axis : str
+        The name of the column to be used for the y-axis.
+    factors : list, optional
+        A list of column names to be used as additional factors for grouping,
+        by default None
+    plot_bands : str, optional
+        Name of the column containing the standard error for the y-axis values,
+        if None no bands are drawn, by default None
+    """
+    data = kwargs.pop("data")
+    factors = kwargs.pop("factors", None)
+    plot_bands = kwargs.pop("plot_bands", None)
+    colors = kwargs.pop("colors", None)
+    linestyles = kwargs.pop("linestyles", None)
+
+    ax = plt.gca()
+    hue_variable = factors[0] if factors is not None and len(factors) >= 1 else None
+
+    if hue_variable is not None:
+        for hue_var in data[hue_variable].unique():
+            subset = data[data[hue_variable] == hue_var].sort_values(x_axis)
+            line = ax.plot(
+                subset[x_axis],
+                subset[y_axis],
+                marker="o",
+                linestyle=linestyles[hue_var] if linestyles is not None else "-",
+                color=colors[hue_var] if colors is not None else None,
+                label=hue_var,
+            )
+            color = line[0].get_color()
+
+            if plot_bands is not None:
+                ax.fill_between(
+                    subset[x_axis],
+                    subset[y_axis] - subset[plot_bands],
+                    subset[y_axis] + subset[plot_bands],
+                    alpha=0.2,
+                    color=color,
+                )
+    else:
+        # assume single line
+        subset = data.sort_values(x_axis)
+        line = ax.plot(
+            subset[x_axis], subset[y_axis], marker="o", linestyle="-", label=None
+        )
+        color = line[0].get_color()
+
+        if plot_bands is not None:
+            ax.fill_between(
+                subset[x_axis],
+                subset[y_axis] - subset[plot_bands],
+                subset[y_axis] + subset[plot_bands],
+                alpha=0.2,
+                color=color,
+            )
+
+
 def plot_individual(
     results,
     y_axis,
     x_axis,
     factors=None,
     colors=None,
+    linestyles=None,
     save_path=None,
     log_y_axis=True,
     log_x_axis=False,
@@ -170,10 +141,7 @@ def plot_individual(
     """
     Plot individual lineplots for each combination of aggregate_x and aggregate_y.
     """
-    plt.rcParams.update(custom_rcparams)
 
-    if colors is None:
-        colors = defaults_colors
     if save_path is not None:
         os.makedirs(os.path.dirname(save_path), exist_ok=True)
 
@@ -206,6 +174,8 @@ def plot_individual(
                 factors=factors,
                 plot_bands=y_axis + "_sem" if se_bands else None,
                 ax=ax,
+                colors=colors,
+                linestyles=linestyles,
             )
 
             if len(grouping_vars) == 2:
@@ -251,6 +221,7 @@ def plot_grid(
     y_axis,
     factors,
     colors=None,
+    linestyles=None,
     save_path=None,
     log_x_axis=True,
     log_y_axis=False,
@@ -261,9 +232,7 @@ def plot_grid(
     """
     Plot a grid of RMSE lineplots faceted by x_axis and y_axis.
     """
-    plt.rcParams.update(custom_rcparams)
-    if colors is None:
-        colors = defaults_colors
+    
     if save_path is not None:
         os.makedirs(os.path.dirname(save_path), exist_ok=True)
     grouped_stats = aggregate_results(
@@ -301,6 +270,8 @@ def plot_grid(
         y_axis=y_axis + "_mean",
         factors=factors,
         plot_bands=y_axis + "_sem" if se_bands else None,
+        colors=colors,
+        linestyles=linestyles,
     )
     # Remove default x/y axis labels and tick labels from all subplots
     for ax in g.axes.flat:

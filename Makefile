@@ -7,15 +7,17 @@ DATA=data
 RESULTS=results
 
 # Default target
+.PHONY: all simulate figures clean
+
 all: simulate figures
 
 # Step 1: Run simulations
 simulate:
-	$(PYTHON) -m $(SRC).run_simulation
+	$(PYTHON) -m run_simulation
 
 # Step 2: Generate figures (optional if scripts already output plots)
 figures:
-	$(PYTHON) -m $(SRC).make_plots
+	$(PYTHON) -m make_plots
 	@echo "Figures should now be in $(RESULTS)/figures"
 
 # Clean up caches
