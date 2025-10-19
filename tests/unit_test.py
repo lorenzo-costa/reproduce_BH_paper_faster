@@ -23,7 +23,7 @@ def test_normal_data_generator():
 @pytest.mark.parametrize("method_class, expected_name", [
     (Bonferroni, "Bonferroni Correction"),
     (BonferroniHochberg, "Bonferroni-Hochberg Correction"),
-    (FalseDiscoveryRate, "FDR Correction"),
+    (FalseDiscoveryRate, "Benjamini-Hochberg Correction"),
 ])
 def test_method_names(method_class, expected_name):
     method = method_class()
