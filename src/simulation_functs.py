@@ -1,4 +1,4 @@
-from ..src.dgps import NormalGenerator, generate_means, compute_p_values
+from src.dgps import NormalGenerator, generate_means, compute_p_values
 import numpy as np
 import pandas as pd
 import itertools

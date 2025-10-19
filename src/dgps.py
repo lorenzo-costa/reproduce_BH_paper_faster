@@ -128,10 +128,10 @@ def generate_means(m, m0, scheme, L, rng=None):
     --------
     >>> means = generate_means(m=4, m0=1, scheme='E', L=4, rng=np.random.default_rng(42))
     >>> means
-    array([0., 0., 1., 1.])
-    >>> means = generate_means(m=4, m0=2, scheme='D', L=8, rng=np.random.default_rng(42))
+    array([2., 3., 4., 0.])
+    >>> means = generate_means(m=4, m0=4, scheme='D', L=8, rng=np.random.default_rng(42))
     >>> means
-    array([0., 0., 6., 8.])
+    array([0., 0., 0., 0.])
     """
     
     if not isinstance(m, int) or m <= 0:
@@ -154,8 +154,8 @@ def generate_means(m, m0, scheme, L, rng=None):
     levels = np.array([L/4, L/2, 3*L/4, L])
     
     if scheme == 'D':  # Linearly Decreasing
-        # more hp closer to 0. Divide non nulls as: 4k, 3k, 2k, k
-        # Sum = 10k = n_alternative, so k = n_alternative/10
+        # more hp closer to 0. divide non nulls as: 4k, 3k, 2k, k
+        # sum = 10k = non nulls, so k = non-nulls/10
         base = m1 / 10
         counts = np.array([4*base, 3*base, 2*base, base])
     elif scheme == 'E':  # Equal
@@ -189,48 +189,6 @@ def generate_means(m, m0, scheme, L, rng=None):
         idx += count
     
     return means
-
-def get_expectations(self) -> np.ndarray:
-        """Generate the expectation values for all hypotheses"""
-        expectations = np.zeros(self.m)
-        
-        if self.n_alternative == 0:
-            return expectations
-        
-        # Non-zero expectations at L/4, L/2, 3L/4, L
-        positions = np.array([self.L/4, self.L/2, 3*self.L/4, self.L])
-        
-        # Determine number of hypotheses in each group
-        if self.pattern == 'D':  # Linearly Decreasing
-            # More hypotheses closer to 0, fewer farther away
-            # For n_alternative hypotheses, divide as: 4k, 3k, 2k, k
-            # Sum = 10k = n_alternative, so k = n_alternative/10
-            base = self.n_alternative / 10
-            counts = np.array([4*base, 3*base, 2*base, base])
-        elif self.pattern == 'E':  # Equal
-            # Equal number in each group
-            counts = np.full(4, self.n_alternative / 4)
-        else:  # 'I' - Linearly Increasing
-            # Fewer hypotheses closer to 0, more farther away
-            base = self.n_alternative / 10
-            counts = np.array([base, 2*base, 3*base, 4*base])
-        
-        counts = counts.astype(int)
-        
-        # Adjust for rounding errors
-        diff = self.n_alternative - counts.sum()
-        if diff > 0:
-            counts[-1] += diff
-        elif diff < 0:
-            counts[0] += diff
-            
-        # Assign expectations
-        idx = 0
-        for pos, count in zip(positions, counts):
-            expectations[idx:idx+count] = pos
-            idx += count
-            
-        return expectations
 
 def compute_p_values(z_scores):
     return 2 * (1 - stats.norm.cdf(np.abs(z_scores)))

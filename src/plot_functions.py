@@ -30,14 +30,18 @@ custom_rcparams = {
 }
 
 # Default color mappings for methods
-defaults_colors = {"Bonferroni Correction": "#00202e", 
-                   "Bonferroni-Hochberg Correction": "#bc5090", 
-                   "Benjamini-Hochberg Correction": "#ff8531"}
+defaults_colors = {
+    "Bonferroni Correction": "#00202e", 
+    "Bonferroni-Hochberg Correction": "#bc5090", 
+    "Benjamini-Hochberg Correction": "#ff8531"
+}
 
 # Default linestyles for methods
-linestyles = {"Bonferroni Correction": "-", 
-              "Bonferroni-Hochberg Correction": "--", 
-              "Benjamini-Hochberg Correction": "-."}
+linestyles = {
+    "Bonferroni Correction": "-", 
+    "Bonferroni-Hochberg Correction": "--", 
+    "Benjamini-Hochberg Correction": "-."
+}
 
 
 def plot_with_bands(x_axis, y_axis, **kwargs):
@@ -108,8 +112,12 @@ def plot_with_bands(x_axis, y_axis, **kwargs):
         
 
 def aggregate_results(
-    results, y_axis, x_axis, factors=None, 
-    log_x_axis=True, log_y_axis=False
+    results, 
+    y_axis, 
+    x_axis, 
+    factors=None, 
+    log_x_axis=True, 
+    log_y_axis=False
 ):
     """Aggregate 
 

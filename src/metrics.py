@@ -47,6 +47,20 @@ class Power(Metric):
 
     Power is defined as the proportion of true alternative hypotheses
     that are correctly rejected.
+    
+    Returns
+    -------
+    float
+        Statistical power
+    
+    Examples
+    --------
+    >>> power_metric = Power()
+    >>> rejected = np.array([True, False, True, False])
+    >>> true_values = np.array([2.0, 0.0, 3.0, 0.0])
+    >>> power = power_metric(rejected, true_values)
+    >>> power
+    1.0
     """
 
     @property
@@ -82,6 +96,20 @@ class TrueRejections(Metric):
 
     True Rejections is defined as the total number of true alternative
     hypotheses that are correctly rejected.
+    
+    Returns
+    -------
+    int
+        Number of true rejections
+    
+    Examples
+    --------
+    >>> tr_metric = TrueRejections()
+    >>> rejected = np.array([True, False, True, False])
+    >>> true_values = np.array([2.0, 0.0, 3.0, 0.0])
+    >>> true_rejections = tr_metric(rejected, true_values)
+    >>> true_rejections
+    2
     """
 
     @property
@@ -117,6 +145,20 @@ class RejectionsNumber(Metric):
 
     Total Rejections is defined as the total number of hypotheses
     that are rejected.
+    
+    Returns
+    -------
+    int
+        Total number of rejections
+    
+    Examples
+    --------
+    >>> tr_metric = RejectionsNumber()
+    >>> rejected = np.array([True, False, True, False])
+    >>> true_values = np.array([2.0, 0.0, 3.0, 0.0])
+    >>> total_rejections = tr_metric(rejected, true_values)
+    >>> total_rejections
+    2
     """
 
     @property

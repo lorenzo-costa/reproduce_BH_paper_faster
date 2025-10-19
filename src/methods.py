@@ -86,8 +86,8 @@ class BonferroniHochberg(MultipleTesting):
 
     Examples
     --------
-    >>> from methods import BonferroniHochbergCorrection
-    >>> bonf = BonferroniHochbergCorrection()
+    >>> from methods import BonferroniHochberg
+    >>> bonf = BonferroniHochberg()
     >>> pvals = np.array([0.01, 0.04, 0.03, 0.20])
     >>> alpha = 0.05
     >>> bonf(pvals, alpha)
@@ -116,25 +116,24 @@ class BonferroniHochberg(MultipleTesting):
 class BenjaminiHochberg(MultipleTesting):
     """Benjamini-Hochberg correction for multiple testing.
 
-    This is a step-up method introduced in Hochberg, 1988, which controls the
-    family-wise error rate (FWER) under the assumption of independence of the p-values.
-    It works by sorting the p-values, finding the smallest k such that
-    p_(k) <= alpha/(m-k+1) and rejecting all hypothesis with p_(i)<=p_(k)
+    This is a step-up method introduced in Benjamini and Hochberg, 1995, which
+    controls the false discovery rate (FDR) under the assumption of independence
+    of the test statistics. It works by sorting the p-values, finding the largest k 
+    such that p_(k) <= k/m * alpha and rejecting all hypothesis with p_(i)<=p_(k)
 
     Examples
     --------
     >>> from methods import BonferroniHochbergCorrection
-    >>> bonf = BonferroniHochbergCorrection()
+    >>> bonf = BenjaminiHochberg()
     >>> pvals = np.array([0.01, 0.04, 0.03, 0.20])
     >>> alpha = 0.05
     >>> bonf(pvals, alpha)
     array([ True, False, True, False])
     >>> bonf.name
-    'Bonferroni Correction'
+    'Benjamini-Hochberg Correction'
     """
     
     def __call__(self, p_values, alpha):
-        # this can be made faster with binary search-like procedure
         sorted_pvalues = np.sort(p_values)
         m = len(p_values)
         threshold = -1
