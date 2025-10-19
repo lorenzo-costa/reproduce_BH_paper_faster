@@ -4,9 +4,7 @@ import seaborn as sns
 import os
 import numpy as np
 import logging
-from pathlib import Path
-from typing import Optional, Dict
-from scipy import stats
+
 
 # Suppress matplotlib category warning for boxplots
 logging.getLogger("matplotlib.category").setLevel(logging.ERROR)
@@ -80,7 +78,7 @@ def plot_with_bands(x_axis, y_axis, **kwargs):
                 label=hue_var
             )
             color = line[0].get_color()
-            # Draw error band if requested
+
             if plot_bands is not None:
                 ax.fill_between(
                     subset[x_axis],
@@ -100,7 +98,7 @@ def plot_with_bands(x_axis, y_axis, **kwargs):
             label=None
         )
         color = line[0].get_color()
-        # Draw error band if requested
+
         if plot_bands is not None:
             ax.fill_between(
                 subset[x_axis],
