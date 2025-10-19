@@ -9,6 +9,7 @@ output_path = "results/figures/"
 if __name__ == "__main__":
     results = pd.read_csv("results/raw/simulation_results.csv")
     
+    print("Generating plot...")
     plot_grid(
         results=results,
         x_axis="m",
