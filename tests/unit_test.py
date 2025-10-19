@@ -1,5 +1,5 @@
 import pytest
-from ..src.dgps import NormalGenerator, compute_p_values, generate_scenario, generate_means
+from ..src.dgps import NormalGenerator, compute_p_values, generate_means
 from ..src.methods import BonferroniHochberg, FalseDiscoveryRate, Bonferroni
 import numpy as np
 
@@ -96,22 +96,37 @@ def test_false_discovery_rate_correction(pvals, alpha, expected):
 
 # test generate_means function
 @pytest.mark.parametrize("m, m0, scheme, L, expected", [
-    (4, 2, 'E', 4, np.array([2., 1., 0., 0.])),
-    (4, 2, 'D', 4, np.array([2., 1., 0., 0.])),
-    (4, 2, 'I', 4, np.array([4., 3., 0., 0.])),
-    (8, 7, 'E', 4, np.array([0., 0., 0., 1., 0., 0., 0., 0.])),
-    (8, 7, 'D', 4, np.array([0., 0., 0., 1., 0., 0., 0., 0.])),
-    (8, 7, 'I', 4, np.array([0., 0., 0., 4., 0., 0., 0., 0.])),
-    (8, 0, 'E', 4, np.array([2., 3., 2., 4., 4., 1., 3., 1.])),
-    (8, 0, 'D', 4, np.array([2., 2., 1., 4., 3., 1., 3., 1.])),
-    (8, 0, 'I', 4, np.array([3., 3., 2., 4., 4., 2., 4., 1.])),
+    (4, 0, 'E', 4, np.array([3., 4., 1., 2.])), # all values present
+    (4, 0, 'E', 4, np.array([3., 4., 1., 2.])), # all values present
+    (4, 0, 'E', 4, np.array([3., 4., 1., 2.])), # all values present
+    (4, 2, 'E', 4, np.array([3., 4., 0., 0.])), # high nulls
+    (4, 2, 'D', 4, np.array([2., 1., 0., 0.])), # low nulls
+    (4, 2, 'I', 4, np.array([3., 4., 0., 0.])), # high nulls
+    (8, 7, 'E', 4, np.array([4., 0., 0., 0., 0., 0., 0., 0.])), # one high
+    (8, 7, 'D', 4, np.array([1., 0., 0., 0., 0., 0., 0., 0.])), # one low
+    (8, 7, 'I', 4, np.array([4., 0., 0., 0., 0., 0., 0., 0.])), # one high
+    (8, 0, 'E', 4, np.array([1., 1., 2., 2., 3., 3., 4., 4.])),
+    (8, 0, 'D', 4, np.array([1., 1., 1., 1., 2., 2., 2., 3.])),
+    (8, 0, 'I', 4, np.array([2., 3., 3., 3., 4., 4., 4., 4.])),
+    (16, 8, 'E', 4, None),
+    (16, 8, 'D', 4, None),
+    (16, 8, 'I', 4, None),
+    (16, 0, 'E', 4, None),
+    (16, 0, 'D', 4, None),
+    (16, 0, 'I', 4, None),
+    (16, 16, 'E', 4, np.zeros(16)),
+    (16, 16, 'D', 4, np.zeros(16)),
+    (16, 16, 'I', 4, np.zeros(16)),
 ])
 def test_generate_means(m, m0, scheme, L, expected):
     rng = np.random.default_rng(42)
     means = generate_means(m, m0, scheme, L, rng=rng)
     # Check that the means contain the expected values (ignoring order)
-    for val in np.unique(expected):
-        assert np.sum(means == val) == np.sum(expected == val)
+    if expected is not None:
+        for val in np.unique(expected):
+            assert np.sum(means == val) == np.sum(expected == val)
+    else:
+        assert np.sum(means != 0) == m - m0
 
 # test compute_p_values function
 @pytest.mark.parametrize("normal_samples, expected", [

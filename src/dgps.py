@@ -143,14 +143,8 @@ def generate_means(m, m0, scheme, L, rng=None):
     if rng is None:
         rng = np.random.default_rng()
 
-    if scheme == 'E':
-        weights = np.array([1, 1, 1, 1])
-    elif scheme == 'D':
-        weights = np.array([4, 3, 2, 1])
-    elif scheme == 'I':
-        weights = np.array([1, 2, 3, 4])
-    else:
-        raise ValueError("Invalid scheme. Choose from ['E', 'D', 'I']")
+    if scheme not in ['E', 'D', 'I']:
+        raise ValueError("scheme must be one of 'E', 'D', or 'I'")
     
     means = np.zeros(m)
     if m0 == m:
@@ -174,12 +168,21 @@ def generate_means(m, m0, scheme, L, rng=None):
         
     # Adjust for rounding errors
     diff = m1 - counts.sum()
-    if diff > 0:
-        counts[-1] += diff
-    elif diff < 0:
-        counts[0] += diff
+    if scheme in ['E', 'I']:
+        if diff > 0:
+            for i in range(diff):
+                counts[-1-i] += 1
+        elif diff < 0:
+            for i in range(-diff):
+                counts[i] -= 1
+    elif scheme == 'D':
+        if diff > 0:
+            for i in range(diff):
+                counts[i] += 1
+        elif diff < 0:
+            for i in range(-diff):
+                counts[-1-i] -= 1
         
-    # Assign expectations
     idx = 0
     for pos, count in zip(levels, counts):
         means[idx:idx+count] = pos
