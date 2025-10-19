@@ -104,7 +104,6 @@ class NormalGenerator(DataGenerator):
     def null_value(self):
         return self.loc
 
-
 def generate_means(m, m0, scheme, L, rng=None):
     """Generate a simulation scenario from a Gaussian sample.
 
@@ -153,27 +152,82 @@ def generate_means(m, m0, scheme, L, rng=None):
     else:
         raise ValueError("Invalid scheme. Choose from ['E', 'D', 'I']")
     
+    means = np.zeros(m)
+    if m0 == m:
+        return means
+    
     m1 = m - m0
-    weights = np.array(weights)
-    proportions = weights / weights.sum()
-    counts = np.floor(proportions * m1).astype(int)
+    levels = np.array([L/4, L/2, 3*L/4, L])
     
-    # adjust for rounding errors
-    remainder = m1 - counts.sum()
-    if remainder > 0:
-        fractional = (weights / weights.sum()) - counts
-        for _ in range(remainder):
-            idx = np.argmax(fractional)
-            counts[idx] += 1
-            fractional[idx] = -1  # Mark as used
+    if scheme == 'D':  # Linearly Decreasing
+        # more hp closer to 0. Divide non nulls as: 4k, 3k, 2k, k
+        # Sum = 10k = n_alternative, so k = n_alternative/10
+        base = m1 / 10
+        counts = np.array([4*base, 3*base, 2*base, base])
+    elif scheme == 'E':  # Equal
+        counts = np.full(4, m1 / 4)
+    else: 
+        base = m1 / 10
+        counts = np.array([base, 2*base, 3*base, 4*base])
     
-    levels = [L/4, L/2, 3*L/4, L]
-    means = np.concatenate([
-        np.zeros(m0),
-        np.repeat(levels, counts)])
-    rng.shuffle(means)
+    counts = counts.astype(int)
+        
+    # Adjust for rounding errors
+    diff = m1 - counts.sum()
+    if diff > 0:
+        counts[-1] += diff
+    elif diff < 0:
+        counts[0] += diff
+        
+    # Assign expectations
+    idx = 0
+    for pos, count in zip(levels, counts):
+        means[idx:idx+count] = pos
+        idx += count
     
     return means
 
-def compute_p_values(normal_samples):
-    return 2 * stats.norm.cdf(-np.abs(normal_samples))
+def get_expectations(self) -> np.ndarray:
+        """Generate the expectation values for all hypotheses"""
+        expectations = np.zeros(self.m)
+        
+        if self.n_alternative == 0:
+            return expectations
+        
+        # Non-zero expectations at L/4, L/2, 3L/4, L
+        positions = np.array([self.L/4, self.L/2, 3*self.L/4, self.L])
+        
+        # Determine number of hypotheses in each group
+        if self.pattern == 'D':  # Linearly Decreasing
+            # More hypotheses closer to 0, fewer farther away
+            # For n_alternative hypotheses, divide as: 4k, 3k, 2k, k
+            # Sum = 10k = n_alternative, so k = n_alternative/10
+            base = self.n_alternative / 10
+            counts = np.array([4*base, 3*base, 2*base, base])
+        elif self.pattern == 'E':  # Equal
+            # Equal number in each group
+            counts = np.full(4, self.n_alternative / 4)
+        else:  # 'I' - Linearly Increasing
+            # Fewer hypotheses closer to 0, more farther away
+            base = self.n_alternative / 10
+            counts = np.array([base, 2*base, 3*base, 4*base])
+        
+        counts = counts.astype(int)
+        
+        # Adjust for rounding errors
+        diff = self.n_alternative - counts.sum()
+        if diff > 0:
+            counts[-1] += diff
+        elif diff < 0:
+            counts[0] += diff
+            
+        # Assign expectations
+        idx = 0
+        for pos, count in zip(positions, counts):
+            expectations[idx:idx+count] = pos
+            idx += count
+            
+        return expectations
+
+def compute_p_values(z_scores):
+    return 2 * (1 - stats.norm.cdf(np.abs(z_scores)))

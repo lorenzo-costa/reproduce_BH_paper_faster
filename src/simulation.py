@@ -4,8 +4,9 @@ import pandas as pd
 import itertools
 
 
-def run_scenario(samples, m0, L, scheme, method, alpha, metrics, rng=None):
+def run_scenario(samples, m0_fraction, L, scheme, method, alpha, metrics, rng=None):
     m = samples.shape[0]
+    m0 = int(m*m0_fraction)
     means = generate_means(m=m, m0=m0, scheme=scheme, L=L, rng=rng)
     # uses property of Gaussian X ~ N(mu, 1) => X = mu + Z, Z ~ N(0,1)
     shifted_samples = samples + means
@@ -13,6 +14,7 @@ def run_scenario(samples, m0, L, scheme, method, alpha, metrics, rng=None):
     rejected = method(p_values, alpha)
     
     results = {'m': m,
+               'm0_fraction': m0_fraction,
                'm0': m0,
                'L': L,
                'scheme': scheme,
@@ -24,7 +26,7 @@ def run_scenario(samples, m0, L, scheme, method, alpha, metrics, rng=None):
     return results
 
 
-def run_simulation(m, m0, L, scheme, method, alpha, metrics=None, nsim=100, rng=None):
+def run_simulation(m, m0_fraction, L, scheme, method, alpha, metrics=None, nsim=100, rng=None):
     """Run simulation study for all combinations of parameters.
 
     Parameters
@@ -59,8 +61,8 @@ def run_simulation(m, m0, L, scheme, method, alpha, metrics=None, nsim=100, rng=
     
     if not isinstance(m, (list, np.ndarray)):
         m = [m]
-    if not isinstance(m0, (list, np.ndarray)):
-        m0 = [m0]
+    if not isinstance(m0_fraction, (list, np.ndarray)):
+        m0_fraction = [m0_fraction]
     if not isinstance(L, (list, np.ndarray)):
         L = [L]
     if not isinstance(scheme, (list, np.ndarray)):
@@ -72,10 +74,9 @@ def run_simulation(m, m0, L, scheme, method, alpha, metrics=None, nsim=100, rng=
     for i in range(nsim):
         for m_i in m:
             samples = NormalGenerator(loc=0, scale=1).generate(m_i, rng=rng)
-            for m0_i, L_i, scheme_i, method_i in itertools.product(m0, L, scheme, method):
-                m0_i = int(m_i*m0_i)
+            for m0_i, L_i, scheme_i, method_i in itertools.product(m0_fraction, L, scheme, method):
                 scenario_out = run_scenario(samples=samples, 
-                                            m0=m0_i, 
+                                            m0_fraction=m0_i, 
                                             L=L_i, 
                                             scheme=scheme_i, 
                                             method=method_i, 
