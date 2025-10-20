@@ -128,11 +128,11 @@ def test_benjamini_hochberg_correction(pvals, alpha, expected):
     "m, m0, scheme, L, expected",
     [
         (4, 0, "E", 4, np.array([3.0, 4.0, 1.0, 2.0])),  # all values present
-        (4, 0, "I", 4, np.array([3.0, 3.0, 4.0, 4.0])),  
+        (4, 0, "I", 4, np.array([3.0, 3.0, 4.0, 4.0])),
         (4, 0, "D", 4, np.array([3.0, 4.0, 1.0, 2.0])),  # all values present
-        (4, 2, "E", 4, np.array([3.0, 4.0, 0.0, 0.0])),  
-        (4, 2, "D", 4, np.array([3.0, 4.0, 0.0, 0.0])),  
-        (4, 2, "I", 4, np.array([3.0, 4.0, 0.0, 0.0])),  
+        (4, 2, "E", 4, np.array([3.0, 4.0, 0.0, 0.0])),
+        (4, 2, "D", 4, np.array([3.0, 4.0, 0.0, 0.0])),
+        (4, 2, "I", 4, np.array([3.0, 4.0, 0.0, 0.0])),
         (8, 7, "E", 4, np.array([4.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])),  # one high
         (8, 7, "D", 4, np.array([4.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])),  # one low
         (8, 7, "I", 4, np.array([4.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])),  # one high

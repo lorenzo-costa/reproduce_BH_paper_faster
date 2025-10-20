@@ -21,17 +21,16 @@ if __name__ == "__main__":
     output_path = cfg["figures_dir"]
     results_dir = cfg.get("results_dir", "results/")
     results = pd.read_csv(results_dir + "raw/full_simulation_results.csv")
-    
-    
-    plt.rcParams.update(cfg['rcparams'])
-    
-    colors = cfg['line_colors']
-    linestyles = cfg['linestyles']
-    name_conversion = cfg['name_conversion']
+
+    plt.rcParams.update(cfg["rcparams"])
+
+    colors = cfg["line_colors"]
+    linestyles = cfg["linestyles"]
+    name_conversion = cfg["name_conversion"]
     plots = cfg["plots"]
 
     print("Generating plots...")
-    
+
     for plot in plots:
         plot_name = plot["name"]
         plot_func = func_map[plot["func"]]
@@ -58,5 +57,5 @@ if __name__ == "__main__":
             save_path=output_path + plot_name,
             colors=colors,
             linestyles=linestyles,
-            name_conversion=name_conversion
+            name_conversion=name_conversion,
         )

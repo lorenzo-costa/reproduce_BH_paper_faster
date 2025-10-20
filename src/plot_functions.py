@@ -12,12 +12,7 @@ logging.getLogger("matplotlib.category").setLevel(logging.ERROR)
 
 
 def aggregate_results(
-    results, 
-    y_axis, 
-    x_axis, 
-    factors=None, 
-    log_x_axis=True, 
-    log_y_axis=False
+    results, y_axis, x_axis, factors=None, log_x_axis=True, log_y_axis=False
 ):
     """Compute dataset with mean and standard error for each group.
 
@@ -63,15 +58,11 @@ def aggregate_results(
 
     if log_x_axis is True:
         grouped_stats[x_axis] = np.log10(grouped_stats[x_axis])
-    
+
     return grouped_stats
 
 
-def plot_with_bands(
-    x_axis, 
-    y_axis, 
-    **kwargs
-):
+def plot_with_bands(x_axis, y_axis, **kwargs):
     """Plot lines with confidence/error bands for each method.
 
     Parameters
@@ -140,14 +131,8 @@ def plot_with_bands(
                 color=color,
             )
 
-def plot_grid(
-    results,
-    x_axis,
-    y_axis,
-    factors,
-    plotting_function=None,
-    **kwargs
-):
+
+def plot_grid(results, x_axis, y_axis, factors, plotting_function=None, **kwargs):
     """Plot a grid of plots using the specified plotting function.
 
     Parameters
@@ -182,7 +167,7 @@ def plot_grid(
         Whether to add a legend to the plot, by default True
     save_path : str, optional
         Path to save the plot, by default None
-        
+
 
     Returns
     -------
@@ -191,7 +176,7 @@ def plot_grid(
     """
     if plotting_function is None:
         raise ValueError("plotting_function must be provided.")
-    
+
     height = kwargs.get("height", 1.3)
     save_path = kwargs.get("save_path", None)
     group_variables = kwargs.get("group_variables", False)
@@ -201,10 +186,10 @@ def plot_grid(
     aspect = kwargs.get("aspect", 1.3)
     name_conversion = kwargs.get("name_conversion", {})
     add_legend = kwargs.get("add_legend", True)
-    
+
     if save_path is not None:
         os.makedirs(os.path.dirname(save_path), exist_ok=True)
-    
+
     if group_variables is True:
         grouped_stats = aggregate_results(
             results,
@@ -217,15 +202,15 @@ def plot_grid(
     else:
         # for consistency, for boxplot we don't aggregate
         grouped_stats = results.copy()
-    
+
     if len(factors) < 2:
         # for consistency this forces FaceGrid to plot a single cell
         grouped_stats = grouped_stats.copy()
-        grouped_stats['_single_facet'] = ''
+        grouped_stats["_single_facet"] = ""
 
         g = sns.FacetGrid(
             grouped_stats,
-            col='_single_facet',
+            col="_single_facet",
             height=height,
             aspect=aspect,
             sharey=True,
@@ -254,24 +239,26 @@ def plot_grid(
             height=height,
             aspect=aspect,
         )
-    
+
     new_y = y_axis + "_mean" if group_variables is True else y_axis
-    new_bands = y_axis + "_sem" if (se_bands is True and group_variables is True) else None
-    
+    new_bands = (
+        y_axis + "_sem" if (se_bands is True and group_variables is True) else None
+    )
+
     g.map_dataframe(
         plotting_function,
         x_axis=x_axis,
         y_axis=new_y,
         factors=factors,
         plot_bands=new_bands,
-        **kwargs
+        **kwargs,
     )
     # remove default x/y axis labels and tick labels from all subplots
     for ax in g.axes.flat:
         ax.set_xlabel("")
         ax.set_ylabel("")
         ax.set_title("")
-        
+
     # Set x and y axis labels only in central places
     x_label = (
         "Log " + name_conversion.get(x_axis, x_axis).replace("_", " ").title()
@@ -279,60 +266,78 @@ def plot_grid(
         else name_conversion.get(x_axis, x_axis).replace("_", " ").title()
     )
     g.axes[-1, g.axes.shape[1] // 2].set_xlabel(x_label)
-    
+
     y_label = (
         "Log " + name_conversion.get(y_axis, y_axis).replace("_", " ").title()
         if log_y_axis
         else name_conversion.get(y_axis, y_axis).replace("_", " ").title()
     )
-    
+
     g.axes[g.axes.shape[0] // 2, 0].set_ylabel(y_label)
 
     if len(factors) >= 2:
         # column facet titles
         for ax in range(g.axes.shape[1]):
             # put percentage sign for fraction variables
-            
-            if re.search(r'(?<![a-z])(?:percentage|fraction|prop)(?![a-z])', aggregate_x, re.IGNORECASE):
-                title = (
-                    f"{int(g.col_names[ax]*100)}% {name_conversion.get(aggregate_x, aggregate_x).replace('_', ' ').title()}"
-                )
+
+            if re.search(
+                r"(?<![a-z])(?:percentage|fraction|prop)(?![a-z])",
+                aggregate_x,
+                re.IGNORECASE,
+            ):
+                title = f"{int(g.col_names[ax] * 100)}% {name_conversion.get(aggregate_x, aggregate_x).replace('_', ' ').title()}"
             else:
                 title = f"{name_conversion.get(aggregate_x, aggregate_x).replace('_', ' ').title()}: {g.col_names[ax]}"
             g.axes[0, ax].set_title(title)
-            
-        # custom row facet labels 
+
+        # custom row facet labels
         if aggregate_y is not None:
             for ax in range(g.axes.shape[0]):
                 # put percentage sign for fraction variables
-                if re.search(r'(?<![a-z])(?:percentage|fraction|prop)(?![a-z])', aggregate_y, re.IGNORECASE):
-                    text = f"{int(g.row_names[ax]*100)}\\% {name_conversion.get(aggregate_y, aggregate_y).replace('_', ' ').title()}"
+                if re.search(
+                    r"(?<![a-z])(?:percentage|fraction|prop)(?![a-z])",
+                    aggregate_y,
+                    re.IGNORECASE,
+                ):
+                    text = f"{int(g.row_names[ax] * 100)}\\% {name_conversion.get(aggregate_y, aggregate_y).replace('_', ' ').title()}"
                 else:
                     text = f"{name_conversion.get(aggregate_y, aggregate_y).replace('_', ' ').title()}: {g.row_names[ax]}"
                 g.axes[ax, -1].texts[0].set_text(text)
-    
+
     if add_legend is True:
         g.add_legend()
-    
+
     # code to make the title centered above the grid not the legend
-    plot_center_x = (g.axes[0, 0].get_position().x0 + g.axes[0, -1].get_position().x1) / 2
+    plot_center_x = (
+        g.axes[0, 0].get_position().x0 + g.axes[0, -1].get_position().x1
+    ) / 2
     if log_y_axis is True:
         g.figure.suptitle(
-            "Log " + name_conversion.get(x_axis, x_axis) + " vs Log " + name_conversion.get(y_axis, y_axis)
+            "Log "
+            + name_conversion.get(x_axis, x_axis)
+            + " vs Log "
+            + name_conversion.get(y_axis, y_axis)
             if log_x_axis
-            else name_conversion.get(x_axis, x_axis) + " vs Log " + name_conversion.get(y_axis, y_axis),
+            else name_conversion.get(x_axis, x_axis)
+            + " vs Log "
+            + name_conversion.get(y_axis, y_axis),
             y=1.02,
             x=plot_center_x,
         )
     else:
         g.figure.suptitle(
-            "Log " + name_conversion.get(x_axis, x_axis) + " vs " + name_conversion.get(y_axis, y_axis)
+            "Log "
+            + name_conversion.get(x_axis, x_axis)
+            + " vs "
+            + name_conversion.get(y_axis, y_axis)
             if log_x_axis
-            else name_conversion.get(x_axis, x_axis) + " vs " + name_conversion.get(y_axis, y_axis),
+            else name_conversion.get(x_axis, x_axis)
+            + " vs "
+            + name_conversion.get(y_axis, y_axis),
             y=1.02,
             x=plot_center_x,
         )
-    
+
     if save_path is not None:
         plt.savefig(save_path + ".png", dpi=300, bbox_inches="tight")
         plt.savefig(save_path + ".pdf", dpi=300, bbox_inches="tight")
@@ -342,11 +347,7 @@ def plot_grid(
     return g
 
 
-def plot_boxplot(
-    x_axis, 
-    y_axis, 
-    **kwargs
-):
+def plot_boxplot(x_axis, y_axis, **kwargs):
     """
     Plot RMSE boxplot versus the given x variable. Optionally log-transform RMSE or x,
     and limit number of boxplots.
@@ -360,7 +361,7 @@ def plot_boxplot(
     aspect = kwargs.pop("aspect", 1.3)
     n_boxplots = kwargs.pop("n_boxplots", 5)
     colors = kwargs.pop("colors", None)
-    
+
     ax = plt.gca()
 
     temp = data.copy()
@@ -370,18 +371,17 @@ def plot_boxplot(
     if log_y_axis is True:
         temp[y_axis] = np.log10(temp[y_axis])
 
-
     if n_boxplots < len(temp[x_axis].unique()):
         # Select n_boxplots evenly spaced along x
         df_values = sorted(temp[x_axis].unique())
         selected_dfs = np.linspace(0, len(df_values) - 1, n_boxplots, dtype=int)
         selected_dfs = [df_values[i] for i in selected_dfs]
         temp = temp[temp[x_axis].isin(selected_dfs)]
-    
+
     hue_variable = None
     if factors is not None and len(factors) >= 1:
         hue_variable = factors[0]
-    
+
     if hue_variable is not None:
         # Create palette from colors dict if provided
         palette = None
@@ -389,8 +389,10 @@ def plot_boxplot(
             # Get unique hue values in the data
             hue_order = sorted(temp[hue_variable].unique())
             palette = [colors.get(hue_val, None) for hue_val in hue_order]
-        
-        sns.boxplot(data=temp, x=x_axis, y=y_axis, hue=hue_variable, palette=palette, ax=ax)
+
+        sns.boxplot(
+            data=temp, x=x_axis, y=y_axis, hue=hue_variable, palette=palette, ax=ax
+        )
     else:
         sns.boxplot(data=temp, x=x_axis, y=y_axis, ax=ax)
 
@@ -456,9 +458,7 @@ def plot_individual(
                     f"{name_conversion.get(grouping_vars[1], grouping_vars[1]).replace('_', ' ').title()}: {group_values[1]}"
                 )
             elif len(grouping_vars) == 1:
-                title = (
-                    f"{name_conversion.get(grouping_vars[0], grouping_vars[0]).replace('_', ' ').title()}: {group_values[0]}"
-                )
+                title = f"{name_conversion.get(grouping_vars[0], grouping_vars[0]).replace('_', ' ').title()}: {group_values[0]}"
             else:
                 title = (
                     f"{name_conversion.get(x_axis, x_axis).replace('_', ' ').title()} vs "
@@ -466,12 +466,8 @@ def plot_individual(
                 )
 
             ax.set_title(title)
-            xlabel = (
-                name_conversion.get(x_axis, x_axis).replace("_", " ").title()
-            )
-            ylabel = (
-                name_conversion.get(y_axis, y_axis).replace("_", " ").title()
-            )
+            xlabel = name_conversion.get(x_axis, x_axis).replace("_", " ").title()
+            ylabel = name_conversion.get(y_axis, y_axis).replace("_", " ").title()
             ax.set_xlabel("Log " + xlabel if log_x_axis else xlabel)
             ax.set_ylabel("Log " + ylabel if log_y_axis else ylabel)
 

@@ -9,7 +9,7 @@ from src.methods import Bonferroni, BonferroniHochberg, BenjaminiHochberg
 import pickle
 import numpy as np
 import yaml
-import time 
+import time
 
 method_map = {
     "Bonferroni": Bonferroni,
@@ -18,11 +18,10 @@ method_map = {
 }
 
 if __name__ == "__main__":
-    
     # load config
     with open("config.yaml", "r") as f:
         cfg = yaml.safe_load(f)
-    
+
     nsim = cfg["nsim"]
     methods = [method_map[name]() for name in cfg["methods"]]
     alpha = cfg["alpha"]
@@ -32,7 +31,7 @@ if __name__ == "__main__":
     L = cfg["L"]
     scheme = cfg["scheme"]
     rng = np.random.default_rng(cfg["rng_seed"])
-    
+
     results_dir = cfg.get("results_dir", "results/")
     data_dir = cfg.get("data_dir", "data/")
 
@@ -48,7 +47,7 @@ if __name__ == "__main__":
         rng=rng,
         metrics=metrics,
         results_dir=results_dir,
-        parallel=True
+        parallel=True,
     )
 
     sim_out.to_csv(f"{results_dir}/raw/full_simulation_results.csv", index=False)
