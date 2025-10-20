@@ -7,7 +7,7 @@ data_dir: "data/"
 figures_dir: "figures/"
 
 # --- sim params ---
-nsim: 1000
+nsim: 20000
 alpha: 0.05
 m: [4, 8, 16, 32, 64]
 m0: [0.75, 0.5, 0.25, 0.0]
@@ -59,3 +59,21 @@ name_conversion:
   scheme: "Testing scheme"
   method: "Multiple testing method"
   Power: "Average Power"
+
+plots:
+  - name: power_grid
+    func: plot_with_bands
+    x_axis: m
+    y_axis: Power
+    factors: [method, scheme, m0_fraction]
+    height : 1.3
+    se_bands : true
+    group_variables : true
+
+  - name: boxplot
+    func: plot_boxplot
+    x_axis: scheme
+    y_axis: Power
+    factors: [method]
+    height : 4
+    n_boxplots : 3
