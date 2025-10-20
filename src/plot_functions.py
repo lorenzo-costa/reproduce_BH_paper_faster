@@ -4,6 +4,7 @@ import seaborn as sns
 import os
 import numpy as np
 import logging
+import re
 
 
 # Suppress matplotlib category warning for boxplots
@@ -203,7 +204,7 @@ def plot_individual(
             )
             ax.set_xlabel("Log " + xlabel if log_x_axis else xlabel)
             ax.set_ylabel("Log " + ylabel if log_y_axis else ylabel)
-            # plt.tight_layout()
+
             plt.legend(title="Method")
 
             if save_path is not None:
@@ -230,61 +231,90 @@ def plot_grid(
     x_axis,
     y_axis,
     factors,
-    colors=None,
-    linestyles=None,
-    save_path=None,
-    log_x_axis=True,
-    log_y_axis=False,
-    se_bands=True,
-    height=1.3,
-    aspect=1.3,
-    name_conversion=None,
+    plotting_function=None,
+    **kwargs
 ):
     """
     Plot a grid of RMSE lineplots faceted by x_axis and y_axis.
     """
+    if plotting_function is None:
+        raise ValueError("plotting_function must be provided.")
+    
+    height = kwargs.get("height", 1.3)
+    save_path = kwargs.get("save_path", None)
+    group_variables = kwargs.get("group_variables", False)
+    se_bands = kwargs.get("se_bands", False)
+    log_y_axis = kwargs.get("log_y_axis", False)
+    log_x_axis = kwargs.get("log_x_axis", False)
+    aspect = kwargs.get("aspect", 1.3)
+    name_conversion = kwargs.get("name_conversion", {})
+    add_legend = kwargs.get("add_legend", True)
     
     if save_path is not None:
         os.makedirs(os.path.dirname(save_path), exist_ok=True)
-    grouped_stats = aggregate_results(
-        results,
-        x_axis=x_axis,
-        y_axis=y_axis,
-        factors=factors,
-        log_x_axis=log_x_axis,
-        log_y_axis=log_y_axis,
-    )
-    hue_variable = factors[0] if len(factors) >= 3 else None
-    aggregate_x = factors[1] if len(factors) >= 3 else factors[0]
-    aggregate_y = factors[2] if len(factors) >= 3 else factors[1]
+    
+    if group_variables is True:
+        grouped_stats = aggregate_results(
+            results,
+            x_axis=x_axis,
+            y_axis=y_axis,
+            factors=factors,
+            log_x_axis=log_x_axis,
+            log_y_axis=log_y_axis,
+        )
+    else:
+        # for consistency, for boxplot we don't aggregate
+        grouped_stats = results.copy()
+    
+    if len(factors) < 2:
+        # for consistency this forces FaceGrid to plot a single cell
+        grouped_stats = grouped_stats.copy()
+        grouped_stats['_single_facet'] = ''
 
-    # Sort aggregate_y values in descending order so largest appears on top
-    grouped_stats[aggregate_y] = pd.Categorical(
-        grouped_stats[aggregate_y],
-        categories=sorted(grouped_stats[aggregate_y].unique(), reverse=True),
-        ordered=True,
-    )
+        g = sns.FacetGrid(
+            grouped_stats,
+            col='_single_facet',
+            height=height,
+            aspect=aspect,
+            sharey=True,
+            sharex=True,
+        )
+    else:
+        hue_variable = factors[0] if len(factors) >= 2 else None
+        aggregate_x = factors[1] if len(factors) >= 2 else factors[0]
+        aggregate_y = factors[2] if len(factors) >= 3 else None
 
-    g = sns.FacetGrid(
-        grouped_stats,
-        row=aggregate_y,
-        col=aggregate_x,
-        margin_titles=True,
-        sharey=True,
-        sharex=True,
-        height=height,
-        aspect=aspect,
-    )
+        if aggregate_y:
+            # for consistency, if only one aggregating variable plot a row
+            grouped_stats[aggregate_y] = pd.Categorical(
+                grouped_stats[aggregate_y],
+                categories=sorted(grouped_stats[aggregate_y].unique(), reverse=True),
+                ordered=True,
+            )
+
+        g = sns.FacetGrid(
+            grouped_stats,
+            row=aggregate_y,
+            col=aggregate_x,
+            margin_titles=True,
+            sharey=True,
+            sharex=True,
+            height=height,
+            aspect=aspect,
+        )
+    
+    new_y = y_axis + "_mean" if group_variables is True else y_axis
+    new_bands = y_axis + "_sem" if (se_bands is True and group_variables is True) else None
+    
     g.map_dataframe(
-        plot_with_bands,
+        plotting_function,
         x_axis=x_axis,
-        y_axis=y_axis + "_mean",
+        y_axis=new_y,
         factors=factors,
-        plot_bands=y_axis + "_sem" if se_bands else None,
-        colors=colors,
-        linestyles=linestyles,
+        plot_bands=new_bands,
+        **kwargs
     )
-    # Remove default x/y axis labels and tick labels from all subplots
+    # remove default x/y axis labels and tick labels from all subplots
     for ax in g.axes.flat:
         ax.set_xlabel("")
         ax.set_ylabel("")
@@ -305,26 +335,42 @@ def plot_grid(
     )
     
     g.axes[g.axes.shape[0] // 2, 0].set_ylabel(y_label)
-   
-   
-    # Set column facet titles
-    for ax in range(g.axes.shape[1]):
-        title = (
-            f"{name_conversion.get(aggregate_x, aggregate_x).replace('_', ' ').title()}: {g.col_names[ax]}"
-        )
-        g.axes[0, ax].set_title(title)
-    # Set custom row facet labels 
-    for ax in range(g.axes.shape[0]):
-        text = f"{int(g.row_names[ax]*100)}\% {name_conversion.get(aggregate_y, aggregate_y).replace('_', ' ').title()}"
-        # text = f"{name_conversion.get(aggregate_y, aggregate_y).replace('_', ' ').title()}: {g.row_names[ax]}"
-        g.axes[ax, -1].texts[0].set_text(text)
-    # Set figure title at the top
+
+    if len(factors) >= 2:
+        # column facet titles
+        for ax in range(g.axes.shape[1]):
+            # put percentage sign for fraction variables
+            
+            if re.search(r'(?<![a-z])(?:percentage|fraction|prop)(?![a-z])', aggregate_x, re.IGNORECASE):
+                title = (
+                    f"{int(g.col_names[ax]*100)}% {name_conversion.get(aggregate_x, aggregate_x).replace('_', ' ').title()}"
+                )
+            else:
+                title = f"{name_conversion.get(aggregate_x, aggregate_x).replace('_', ' ').title()}: {g.col_names[ax]}"
+            g.axes[0, ax].set_title(title)
+            
+        # custom row facet labels 
+        if aggregate_y is not None:
+            for ax in range(g.axes.shape[0]):
+                # put percentage sign for fraction variables
+                if re.search(r'(?<![a-z])(?:percentage|fraction|prop)(?![a-z])', aggregate_y, re.IGNORECASE):
+                    text = f"{int(g.row_names[ax]*100)}\\% {name_conversion.get(aggregate_y, aggregate_y).replace('_', ' ').title()}"
+                else:
+                    text = f"{name_conversion.get(aggregate_y, aggregate_y).replace('_', ' ').title()}: {g.row_names[ax]}"
+                g.axes[ax, -1].texts[0].set_text(text)
+    
+    if add_legend is True:
+        g.add_legend()
+    
+    # code to make the title centered above the grid not the legend
+    plot_center_x = (g.axes[0, 0].get_position().x0 + g.axes[0, -1].get_position().x1) / 2
     if log_y_axis is True:
         g.figure.suptitle(
             "Log " + name_conversion.get(x_axis, x_axis) + " vs Log " + name_conversion.get(y_axis, y_axis)
             if log_x_axis
             else name_conversion.get(x_axis, x_axis) + " vs Log " + name_conversion.get(y_axis, y_axis),
             y=1.02,
+            x=plot_center_x,
         )
     else:
         g.figure.suptitle(
@@ -332,8 +378,9 @@ def plot_grid(
             if log_x_axis
             else name_conversion.get(x_axis, x_axis) + " vs " + name_conversion.get(y_axis, y_axis),
             y=1.02,
+            x=plot_center_x,
         )
-    g.add_legend()
+    
     if save_path is not None:
         plt.savefig(save_path + ".png", dpi=300, bbox_inches="tight")
         plt.savefig(save_path + ".pdf", dpi=300, bbox_inches="tight")
@@ -344,65 +391,76 @@ def plot_grid(
 
 
 def plot_boxplot(
-    results,
-    colors=None,
-    save_path=None,
-    log_rmse=True,
-    log_x=False,
-    height=1.3,
-    aspect=1.3,
-    x="degrees_of_freedom",
-    y="rmse",
-    n_boxplots=3,
+    x_axis, 
+    y_axis, 
+    **kwargs
 ):
     """
     Plot RMSE boxplot versus the given x variable. Optionally log-transform RMSE or x,
     and limit number of boxplots.
     """
-    plt.rcParams.update(custom_rcparams)
-    if colors is None:
-        colors = defaults_colors
-    if save_path is not None:
-        os.makedirs(os.path.dirname(save_path), exist_ok=True)
+    data = kwargs.pop("data")
+    factors = kwargs.pop("factors", None)
+    save_path = kwargs.pop("save_path", None)
+    log_y_axis = kwargs.pop("log_y_axis", False)
+    log_x_axis = kwargs.pop("log_x_axis", False)
+    height = kwargs.pop("height", 4)
+    aspect = kwargs.pop("aspect", 1.3)
+    n_boxplots = kwargs.pop("n_boxplots", 5)
+    colors = kwargs.pop("colors", None)
+    
+    ax = plt.gca()
 
-    temp = results.copy()
+    temp = data.copy()
 
-    if log_x is True:
-        temp[x] = np.log10(temp[x])
-    if log_rmse is True:
-        temp["rmse"] = np.log10(temp["rmse"])
+    if log_x_axis is True:
+        temp[x_axis] = np.log10(temp[x_axis])
+    if log_y_axis is True:
+        temp[y_axis] = np.log10(temp[y_axis])
 
-    if x == "SNR":
-        xname = f"{x.replace('_', ' ')}"
+
+    if n_boxplots < len(temp[x_axis].unique()):
+        # Select n_boxplots evenly spaced along x
+        df_values = sorted(temp[x_axis].unique())
+        selected_dfs = np.linspace(0, len(df_values) - 1, n_boxplots, dtype=int)
+        selected_dfs = [df_values[i] for i in selected_dfs]
+        temp = temp[temp[x_axis].isin(selected_dfs)]
+    
+    hue_variable = None
+    if factors is not None and len(factors) >= 1:
+        hue_variable = factors[0]
+    
+    if hue_variable is not None:
+        # Create palette from colors dict if provided
+        palette = None
+        if colors is not None:
+            # Get unique hue values in the data
+            hue_order = sorted(temp[hue_variable].unique())
+            palette = [colors.get(hue_val, None) for hue_val in hue_order]
+        
+        sns.boxplot(data=temp, x=x_axis, y=y_axis, hue=hue_variable, palette=palette, ax=ax)
     else:
-        xname = f"{x.replace('_', ' ').title()}"
+        sns.boxplot(data=temp, x=x_axis, y=y_axis, ax=ax)
+    
+    # xname = f"{x_axis.replace('_', ' ').title()}"
+    # plt.xlabel(f"Log {xname}" if log_x_axis else f"{xname}")
+    # yname = (
+    #     f"Log {y_axis.replace('_', ' ').title()}" if log_y_axis else f"{y_axis.replace('_', ' ').title()}"
+    # )
+    # plt.ylabel(yname)
+    # plt.tight_layout()
+    # plt.legend(title="Method")
 
-    if n_boxplots is not None:
-        if n_boxplots < len(temp[x].unique()):
-            # Select n_boxplots evenly spaced along x
-            df_values = sorted(temp[x].unique())
-            selected_dfs = np.linspace(0, len(df_values) - 1, n_boxplots, dtype=int)
-            selected_dfs = [df_values[i] for i in selected_dfs]
-            temp = temp[temp[x].isin(selected_dfs)]
+    # plt.title(
+    #     "Boxplot of "
+    #     + ("Log RMSE" if log_x_axis else "RMSE")
+    #     + " vs "
+    #     + (f"Log {xname}" if log_x_axis else f"{xname}")
+    # )
 
-    fig, ax = plt.subplots(figsize=(height * aspect, height))
-    sns.boxplot(data=temp, x=x, y=y, hue="name", ax=ax)
-
-    plt.xlabel(f"Log {xname}" if log_x else f"{xname}")
-    plt.ylabel("Log RMSE" if log_rmse else "RMSE")
-    plt.tight_layout()
-    plt.legend(title="Method")
-
-    plt.title(
-        "Boxplot of "
-        + ("Log RMSE" if log_rmse else "RMSE")
-        + " vs "
-        + (f"Log {xname}" if log_x else f"{xname}")
-    )
-
-    if save_path is not None:
-        plt.savefig(save_path + ".png", dpi=300, bbox_inches="tight")
-        plt.savefig(save_path + ".pdf", dpi=300, bbox_inches="tight")
-    else:
-        plt.show()
-    plt.close()
+    # if save_path is not None:
+    #     plt.savefig(save_path + ".png", dpi=300, bbox_inches="tight")
+    #     plt.savefig(save_path + ".pdf", dpi=300, bbox_inches="tight")
+    # else:
+    #     plt.show()
+    # plt.close()
