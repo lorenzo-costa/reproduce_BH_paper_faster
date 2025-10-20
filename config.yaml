@@ -4,7 +4,7 @@
 # --- general ---
 results_dir: "results/"
 data_dir: "data/"
-figures_dir: "figures/"
+figures_dir: "results/figures/"
 
 # --- sim params ---
 nsim: 20000

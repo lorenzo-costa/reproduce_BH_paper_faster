@@ -393,10 +393,10 @@ def plot_grid(results, x_axis, y_axis, factors, plotting_function=None, **kwargs
                 aggregate_x,
                 re.IGNORECASE,
             ):
-                title = f"{int(g.col_names[ax] * 100)}% {name_conversion.get(aggregate_x, aggregate_x).replace('_', ' ').title()}"
+                facet_title = f"{int(g.col_names[ax] * 100)}% {name_conversion.get(aggregate_x, aggregate_x).replace('_', ' ').title()}"
             else:
-                title = f"{name_conversion.get(aggregate_x, aggregate_x).replace('_', ' ').title()}: {g.col_names[ax]}"
-            g.axes[0, ax].set_title(title)
+                facet_title = f"{name_conversion.get(aggregate_x, aggregate_x).replace('_', ' ').title()}: {g.col_names[ax]}"
+            g.axes[0, ax].set_title(facet_title)
 
         # custom row facet labels
         if aggregate_y is not None:

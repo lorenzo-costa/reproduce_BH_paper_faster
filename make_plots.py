@@ -42,6 +42,7 @@ if __name__ == "__main__":
         se_bands = plot.get("se_bands", False)
         group_variables = plot.get("group_variables", False)
         ratio_variable = plot.get("ratio_variable", None)
+        title = plot.get("title", None)
 
         plot_grid(
             results=results,
@@ -56,6 +57,7 @@ if __name__ == "__main__":
             group_variables=group_variables,
             n_boxplots=n_boxplots,
             ratio_variable=ratio_variable,
+            title=title,
             save_path=output_path + plot_name,
             colors=colors,
             linestyles=linestyles,
