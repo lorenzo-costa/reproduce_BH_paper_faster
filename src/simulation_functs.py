@@ -30,7 +30,7 @@ def run_scenario(samples, m0_fraction, L, scheme, method, alpha, metrics, rng=No
 
 
 def run_simulation(
-    m, m0_fraction, L, scheme, method, alpha, metrics=None, nsim=100, rng=None
+    m, m0_fraction, L, scheme, method, alpha, metrics=None, nsim=100, rng=None, results_dir="results/"
 ):
     """Run simulation study for all combinations of parameters.
 
@@ -80,8 +80,12 @@ def run_simulation(
 
     out = pd.DataFrame()
     samples_list = []
+    save_points = np.unique(np.linspace(1, nsim, min(10, nsim), dtype=int))
     with tqdm(total=total_runs, desc="Running simulations") as pbar:
         for i in range(nsim):
+            if (i + 1) in save_points:
+                out.to_csv(f"{results_dir}/raw/simulation_results_checkpoint_{i}.csv", index=False)
+                
             for m_i in m:
                 samples = NormalGenerator(loc=0, scale=1).generate(m_i, rng=rng)
                 samples_list.append(samples)
@@ -103,5 +107,6 @@ def run_simulation(
                         [out, pd.DataFrame(scenario_out, index=[0])], ignore_index=True
                     )
                     pbar.update(1)
-
+            
+                
     return out, samples_list

@@ -32,6 +32,9 @@ if __name__ == "__main__":
     L = cfg["L"]
     scheme = cfg["scheme"]
     rng = np.random.default_rng(cfg["rng_seed"])
+    
+    results_dir = cfg.get("results_dir", "results/")
+    data_dir = cfg.get("data_dir", "data/")
 
     print("Running simulation...")
     start_time = time.time()
@@ -45,11 +48,11 @@ if __name__ == "__main__":
         alpha=alpha,
         rng=rng,
         metrics=metrics,
+        results_dir=results_dir
     )
 
-    results_dir = cfg.get("results_dir", "results/")
-    data_dir = cfg.get("data_dir", "data/")
-    sim_out.to_csv(f"{results_dir}/raw/simulation_results.csv", index=False)
+    
+    sim_out.to_csv(f"{results_dir}/raw/full_simulation_results.csv", index=False)
     with open(f"{data_dir}/simulated/simulation_samples.pkl", "wb") as f:
         pickle.dump(samples_list, f)
     end = time.time()
