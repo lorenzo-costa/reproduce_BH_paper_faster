@@ -9,6 +9,7 @@ from src.methods import Bonferroni, BonferroniHochberg, BenjaminiHochberg
 import pickle
 import numpy as np
 import yaml
+import time 
 
 method_map = {
     "Bonferroni": Bonferroni,
@@ -31,8 +32,9 @@ if __name__ == "__main__":
     L = cfg["L"]
     scheme = cfg["scheme"]
     rng = np.random.default_rng(cfg["rng_seed"])
-    
-    
+
+    print("Running simulation...")
+    start_time = time.time()
     sim_out, samples_list = run_simulation(
         nsim=nsim,
         m=m,
@@ -50,3 +52,5 @@ if __name__ == "__main__":
     sim_out.to_csv(f"{results_dir}/raw/simulation_results.csv", index=False)
     with open(f"{data_dir}/simulated/simulation_samples.pkl", "wb") as f:
         pickle.dump(samples_list, f)
+    end = time.time()
+    print(f"Simulation completed in {end - start_time:.2f} seconds.")
