@@ -93,6 +93,58 @@ class Power(Metric):
 
         return power
 
+class FalseDiscoveryRate(Metric):
+    """False Discovery Rate metric.
+
+    False Discovery Rate is defined as the proportion of false rejections
+    among all rejections.
+
+    Returns
+    -------
+    float
+        False Discovery Rate
+
+    Examples
+    --------
+    >>> fdr_metric = FalseDiscoveryRate()
+    >>> rejected = np.array([True, False, True, False])
+    >>> true_values = np.array([0.0, 0.0, 3.0, 0.0])
+    >>> fdr = fdr_metric(rejected, true_values)
+    >>> fdr
+    0.5
+    """
+
+    @property
+    def name(self):
+        return "FDR"
+
+    def __call__(self, rejected, true_values):
+        """Compute the False Discovery Rate.
+
+        False Discovery Rate is defined as the proportion of false rejections
+        among all rejections.
+
+        Parameters
+        ----------
+        rejected : np.ndarray
+            Boolean array indicating which hypotheses are rejected
+        true_values : np.ndarray
+            Array of true means for each hypothesis; non-zero indicates
+            true alternatives
+
+        Returns
+        -------
+        float
+            False Discovery Rate
+        """
+        if np.sum(rejected) == 0:
+            return 0.0
+
+        false_rejections = np.sum(rejected & (true_values == 0))
+        fdr = false_rejections / np.sum(rejected)
+
+        return fdr
+
 
 class TrueRejections(Metric):
     """True Rejections metric.
