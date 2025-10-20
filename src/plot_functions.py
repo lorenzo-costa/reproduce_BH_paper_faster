@@ -12,7 +12,13 @@ logging.getLogger("matplotlib.category").setLevel(logging.ERROR)
 
 
 def aggregate_results(
-    results, y_axis, x_axis, factors=None, log_x_axis=True, log_y_axis=False
+    results, 
+    y_axis, 
+    x_axis, 
+    factors=None, 
+    log_x_axis=False, 
+    log_y_axis=False, 
+    transform=None
 ):
     """Compute dataset with mean and standard error for each group.
 
@@ -31,6 +37,8 @@ def aggregate_results(
         Whether to use a logarithmic scale for the x-axis, by default True
     log_y_axis : bool, optional
         Whether to use a logarithmic scale for the y-axis, by default False
+    transform : callable, optional
+        A function to apply to the df after aggregation, by default None
 
     Returns
     -------
@@ -58,6 +66,9 @@ def aggregate_results(
 
     if log_x_axis is True:
         grouped_stats[x_axis] = np.log10(grouped_stats[x_axis])
+    
+    if transform is not None:
+        grouped_stats = transform(grouped_stats)
 
     return grouped_stats
 
@@ -131,6 +142,85 @@ def plot_with_bands(x_axis, y_axis, **kwargs):
                 color=color,
             )
 
+def plot_boxplot(x_axis, y_axis, **kwargs):
+    """Create a boxplot for the given x and y axes.
+
+    Parameters
+    ----------
+    x_axis : str
+        The name of the column to be used for the x-axis.
+    y_axis : str
+        The name of the column to be used for the y-axis.
+    data : pd.DataFrame
+        DataFrame containing the data to plot.
+    factors : list, optional
+        A list of column names to be used as additional factors for grouping,
+        by default None
+    log_y_axis : bool, optional
+        Whether to use a logarithmic scale for the y-axis, by default False
+    log_x_axis : bool, optional
+        Whether to use a logarithmic scale for the x-axis, by default False
+    n_boxplots : int, optional
+        Number of boxplots to display along the x-axis, by default 5
+    colors : dict, optional
+        A dictionary mapping factor values to colors, by default None
+    """
+    data = kwargs.pop("data")
+    factors = kwargs.pop("factors", None)
+    log_y_axis = kwargs.pop("log_y_axis", False)
+    log_x_axis = kwargs.pop("log_x_axis", False)
+    n_boxplots = kwargs.pop("n_boxplots", 5)
+    colors = kwargs.pop("colors", None)
+
+    ax = plt.gca()
+
+    temp = data.copy()
+
+    if log_x_axis is True:
+        temp[x_axis] = np.log10(temp[x_axis])
+    if log_y_axis is True:
+        temp[y_axis] = np.log10(temp[y_axis])
+
+    if n_boxplots < len(temp[x_axis].unique()):
+        # Select n_boxplots evenly spaced along x
+        df_values = sorted(temp[x_axis].unique())
+        selected_dfs = np.linspace(0, len(df_values) - 1, n_boxplots, dtype=int)
+        selected_dfs = [df_values[i] for i in selected_dfs]
+        temp = temp[temp[x_axis].isin(selected_dfs)]
+
+    hue_variable = None
+    if factors is not None and len(factors) >= 1:
+        hue_variable = factors[0]
+
+    if hue_variable is not None:
+        # Create palette from colors dict if provided
+        palette = None
+        if colors is not None:
+            # Get unique hue values in the data
+            hue_order = sorted(temp[hue_variable].unique())
+            palette = [colors.get(hue_val, None) for hue_val in hue_order]
+
+        sns.boxplot(
+            data=temp, x=x_axis, y=y_axis, hue=hue_variable, palette=palette, ax=ax
+        )
+    else:
+        sns.boxplot(data=temp, x=x_axis, y=y_axis, ax=ax)
+
+
+def _ratio_helper(df, factors, ratio_variable, y_axis, num, den):
+    df_ratio = (
+        df.pivot_table(
+            index=factors,
+            columns=ratio_variable,
+            values=y_axis + "_mean"
+        )
+        .reset_index()
+    )
+    df_ratio[y_axis + "_ratio"] = df_ratio[num] / df_ratio[den]
+
+    return df_ratio
+    
+
 
 def plot_grid(results, x_axis, y_axis, factors, plotting_function=None, **kwargs):
     """Plot a grid of plots using the specified plotting function.
@@ -186,7 +276,9 @@ def plot_grid(results, x_axis, y_axis, factors, plotting_function=None, **kwargs
     aspect = kwargs.get("aspect", 1.3)
     name_conversion = kwargs.get("name_conversion", {})
     add_legend = kwargs.get("add_legend", True)
-
+    ratio_variable = kwargs.get("ratio_variable", None)
+    title = kwargs.get("title", None)
+    
     if save_path is not None:
         os.makedirs(os.path.dirname(save_path), exist_ok=True)
 
@@ -195,10 +287,20 @@ def plot_grid(results, x_axis, y_axis, factors, plotting_function=None, **kwargs
             results,
             x_axis=x_axis,
             y_axis=y_axis,
-            factors=factors,
+            factors=factors+([ratio_variable] if ratio_variable is not None else []),
             log_x_axis=log_x_axis,
             log_y_axis=log_y_axis,
         )
+        if ratio_variable is not None:
+            den, num = sorted(results[ratio_variable].unique())
+            grouped_stats = _ratio_helper(
+                grouped_stats,
+                factors=factors+[x_axis],
+                ratio_variable=ratio_variable,
+                y_axis=y_axis,
+                num=num,
+                den=den
+            )
     else:
         # for consistency, for boxplot we don't aggregate
         grouped_stats = results.copy()
@@ -240,7 +342,13 @@ def plot_grid(results, x_axis, y_axis, factors, plotting_function=None, **kwargs
             aspect=aspect,
         )
 
-    new_y = y_axis + "_mean" if group_variables is True else y_axis
+    new_y = y_axis
+    if group_variables is True:
+        if ratio_variable is not None:
+            new_y = y_axis + "_ratio"
+        else:
+            new_y = y_axis + "_mean"
+    
     new_bands = (
         y_axis + "_sem" if (se_bands is True and group_variables is True) else None
     )
@@ -311,32 +419,39 @@ def plot_grid(results, x_axis, y_axis, factors, plotting_function=None, **kwargs
     plot_center_x = (
         g.axes[0, 0].get_position().x0 + g.axes[0, -1].get_position().x1
     ) / 2
-    if log_y_axis is True:
+    if title is not None:
         g.figure.suptitle(
-            "Log "
-            + name_conversion.get(x_axis, x_axis)
-            + " vs Log "
-            + name_conversion.get(y_axis, y_axis)
-            if log_x_axis
-            else name_conversion.get(x_axis, x_axis)
-            + " vs Log "
-            + name_conversion.get(y_axis, y_axis),
+            title,
             y=1.02,
             x=plot_center_x,
         )
     else:
-        g.figure.suptitle(
-            "Log "
-            + name_conversion.get(x_axis, x_axis)
-            + " vs "
-            + name_conversion.get(y_axis, y_axis)
-            if log_x_axis
-            else name_conversion.get(x_axis, x_axis)
-            + " vs "
-            + name_conversion.get(y_axis, y_axis),
-            y=1.02,
-            x=plot_center_x,
-        )
+        if log_y_axis is True:
+            g.figure.suptitle(
+                "Log "
+                + name_conversion.get(x_axis, x_axis)
+                + " vs Log "
+                + name_conversion.get(y_axis, y_axis)
+                if log_x_axis
+                else name_conversion.get(x_axis, x_axis)
+                + " vs Log "
+                + name_conversion.get(y_axis, y_axis),
+                y=1.02,
+                x=plot_center_x,
+            )
+        else:
+            g.figure.suptitle(
+                "Log "
+                + name_conversion.get(x_axis, x_axis)
+                + " vs "
+                + name_conversion.get(y_axis, y_axis)
+                if log_x_axis
+                else name_conversion.get(x_axis, x_axis)
+                + " vs "
+                + name_conversion.get(y_axis, y_axis),
+                y=1.02,
+                x=plot_center_x,
+            )
 
     if save_path is not None:
         plt.savefig(save_path + ".png", dpi=300, bbox_inches="tight")
@@ -345,57 +460,6 @@ def plot_grid(results, x_axis, y_axis, factors, plotting_function=None, **kwargs
         plt.show()
     plt.close()
     return g
-
-
-def plot_boxplot(x_axis, y_axis, **kwargs):
-    """
-    Plot RMSE boxplot versus the given x variable. Optionally log-transform RMSE or x,
-    and limit number of boxplots.
-    """
-    data = kwargs.pop("data")
-    factors = kwargs.pop("factors", None)
-    save_path = kwargs.pop("save_path", None)
-    log_y_axis = kwargs.pop("log_y_axis", False)
-    log_x_axis = kwargs.pop("log_x_axis", False)
-    height = kwargs.pop("height", 4)
-    aspect = kwargs.pop("aspect", 1.3)
-    n_boxplots = kwargs.pop("n_boxplots", 5)
-    colors = kwargs.pop("colors", None)
-
-    ax = plt.gca()
-
-    temp = data.copy()
-
-    if log_x_axis is True:
-        temp[x_axis] = np.log10(temp[x_axis])
-    if log_y_axis is True:
-        temp[y_axis] = np.log10(temp[y_axis])
-
-    if n_boxplots < len(temp[x_axis].unique()):
-        # Select n_boxplots evenly spaced along x
-        df_values = sorted(temp[x_axis].unique())
-        selected_dfs = np.linspace(0, len(df_values) - 1, n_boxplots, dtype=int)
-        selected_dfs = [df_values[i] for i in selected_dfs]
-        temp = temp[temp[x_axis].isin(selected_dfs)]
-
-    hue_variable = None
-    if factors is not None and len(factors) >= 1:
-        hue_variable = factors[0]
-
-    if hue_variable is not None:
-        # Create palette from colors dict if provided
-        palette = None
-        if colors is not None:
-            # Get unique hue values in the data
-            hue_order = sorted(temp[hue_variable].unique())
-            palette = [colors.get(hue_val, None) for hue_val in hue_order]
-
-        sns.boxplot(
-            data=temp, x=x_axis, y=y_axis, hue=hue_variable, palette=palette, ax=ax
-        )
-    else:
-        sns.boxplot(data=temp, x=x_axis, y=y_axis, ax=ax)
-
 
 def plot_individual(
     results,
