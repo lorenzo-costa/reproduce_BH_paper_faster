@@ -77,3 +77,13 @@ plots:
     factors: [method]
     height : 4
     n_boxplots : 3
+  
+  - name: power_ratio_grid
+    func: plot_with_bands
+    x_axis: m
+    y_axis: Power
+    factors: [method, scheme, m0_fraction]
+    ratio_variable: L
+    height : 1.3
+    group_variables : true
+    title : "Power Ratio (L=10 / L=5)"
