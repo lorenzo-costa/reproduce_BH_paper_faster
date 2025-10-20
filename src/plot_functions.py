@@ -7,33 +7,40 @@ import logging
 import re
 
 
-# Suppress matplotlib category warning for boxplots
+# Suppress weird matplotlib category warning for boxplots
 logging.getLogger("matplotlib.category").setLevel(logging.ERROR)
 
+
 def aggregate_results(
-    results, y_axis, x_axis, factors=None, log_x_axis=True, log_y_axis=False
+    results, 
+    y_axis, 
+    x_axis, 
+    factors=None, 
+    log_x_axis=True, 
+    log_y_axis=False
 ):
-    """Aggregate
+    """Compute dataset with mean and standard error for each group.
 
     Parameters
     ----------
-    results : _type_
-        _description_
-    y_axis : _type_
-        _description_
-    x_axis : _type_
-        _description_
-    factors : _type_, optional
-        _description_, by default None
+    results : pd.DataFrame
+        Input DataFrame to group and aggregate.
+    y_axis : str
+        The name of the column to be used for the y-axis.
+    x_axis : str
+        The name of the column to be used for the x-axis.
+    factors : list, optional
+        A list of column names to be used as additional factors for grouping,
+        by default None
     log_x_axis : bool, optional
-        _description_, by default True
+        Whether to use a logarithmic scale for the x-axis, by default True
     log_y_axis : bool, optional
-        _description_, by default False
+        Whether to use a logarithmic scale for the y-axis, by default False
 
     Returns
     -------
-    _type_
-        _description_
+    pd.DataFrame
+        DataFrame containing the aggregated results with mean and standard error for each group
     """
     if factors is None:
         factors = []
@@ -56,10 +63,15 @@ def aggregate_results(
 
     if log_x_axis is True:
         grouped_stats[x_axis] = np.log10(grouped_stats[x_axis])
+    
     return grouped_stats
 
 
-def plot_with_bands(x_axis, y_axis, **kwargs):
+def plot_with_bands(
+    x_axis, 
+    y_axis, 
+    **kwargs
+):
     """Plot lines with confidence/error bands for each method.
 
     Parameters
@@ -76,6 +88,10 @@ def plot_with_bands(x_axis, y_axis, **kwargs):
     plot_bands : str, optional
         Name of the column containing the standard error for the y-axis values,
         if None no bands are drawn, by default None
+    colors : dict, optional
+        A dictionary mapping factor values to colors, by default None
+    linestyles : dict, optional
+        A dictionary mapping factor values to linestyles, by default None
     """
     data = kwargs.pop("data")
     factors = kwargs.pop("factors", None)
@@ -124,108 +140,6 @@ def plot_with_bands(x_axis, y_axis, **kwargs):
                 color=color,
             )
 
-
-def plot_individual(
-    results,
-    y_axis,
-    x_axis,
-    factors=None,
-    colors=None,
-    linestyles=None,
-    save_path=None,
-    log_y_axis=True,
-    log_x_axis=False,
-    se_bands=True,
-    height=4,
-    aspect=1.3,
-    name_conversion=None,
-):
-    """
-    Plot individual lineplots for each combination of aggregate_x and aggregate_y.
-    """
-
-    if save_path is not None:
-        os.makedirs(os.path.dirname(save_path), exist_ok=True)
-
-    if factors is None:
-        factors = []
-
-    hue_variable = factors[0] if len(factors) >= 1 else None
-    grouping_vars = factors[1:] if len(factors) >= 2 else []
-
-    grouped_stats = aggregate_results(
-        results,
-        y_axis=y_axis,
-        x_axis=x_axis,
-        factors=factors,
-        log_y_axis=log_y_axis,
-        log_x_axis=log_x_axis,
-    )
-
-    if len(grouping_vars) > 0:
-        for group_values, data_subset in grouped_stats.groupby(grouping_vars):
-            if not isinstance(group_values, tuple):
-                group_values = (group_values,)
-
-            fig, ax = plt.subplots(figsize=(height * aspect, height))
-
-            plot_with_bands(
-                data=data_subset,
-                x_axis=x_axis,
-                y_axis=y_axis + "_mean",
-                factors=factors,
-                plot_bands=y_axis + "_sem" if se_bands else None,
-                ax=ax,
-                colors=colors,
-                linestyles=linestyles,
-            )
-
-            if len(grouping_vars) == 2:
-                title = (
-                    f"{name_conversion.get(grouping_vars[0], grouping_vars[0]).replace('_', ' ').title()}: {group_values[0]}, "
-                    f"{name_conversion.get(grouping_vars[1], grouping_vars[1]).replace('_', ' ').title()}: {group_values[1]}"
-                )
-            elif len(grouping_vars) == 1:
-                title = (
-                    f"{name_conversion.get(grouping_vars[0], grouping_vars[0]).replace('_', ' ').title()}: {group_values[0]}"
-                )
-            else:
-                title = (
-                    f"{name_conversion.get(x_axis, x_axis).replace('_', ' ').title()} vs "
-                    f"{name_conversion.get(y_axis, y_axis).replace('_', ' ').title()}"
-                )
-
-            ax.set_title(title)
-            xlabel = (
-                name_conversion.get(x_axis, x_axis).replace("_", " ").title()
-            )
-            ylabel = (
-                name_conversion.get(y_axis, y_axis).replace("_", " ").title()
-            )
-            ax.set_xlabel("Log " + xlabel if log_x_axis else xlabel)
-            ax.set_ylabel("Log " + ylabel if log_y_axis else ylabel)
-
-            plt.legend(title="Method")
-
-            if save_path is not None:
-                path = f"{save_path}" + "".join(f"_{val}" for val in group_values)
-                plt.savefig(
-                    f"{path}.png",
-                    dpi=300,
-                    bbox_inches="tight",
-                )
-                plt.savefig(
-                    f"{path}.pdf",
-                    dpi=300,
-                    bbox_inches="tight",
-                )
-            else:
-                plt.show()
-            plt.close()
-    else:
-        raise NotImplementedError
-
-
 def plot_grid(
     results,
     x_axis,
@@ -234,8 +148,46 @@ def plot_grid(
     plotting_function=None,
     **kwargs
 ):
-    """
-    Plot a grid of RMSE lineplots faceted by x_axis and y_axis.
+    """Plot a grid of plots using the specified plotting function.
+
+    Parameters
+    ----------
+    results : pd.DataFrame
+        DataFrame containing the data to plot.
+    x_axis : str
+        The name of the column to be used for the x-axis.
+    y_axis : str
+        The name of the column to be used for the y-axis.
+    factors : list
+        A list of column names to be used as additional factors for grouping.
+    plotting_function : callable, optional
+        A function to use for plotting, by default None
+    height : float, optional
+        Height of each facet in inches, by default 1.3
+    aspect : float, optional
+        Aspect ratio of each facet, by default 1.3
+    group_variables : bool, optional
+        Whether to aggregate results by computing mean and standard error
+        for each combination of factors, by default False
+    se_bands : bool, optional
+        Whether to plot standard error bands, by default False
+    log_y_axis : bool, optional
+        Whether to use a logarithmic scale for the y-axis, by default False
+    log_x_axis : bool, optional
+        Whether to use a logarithmic scale for the x-axis, by default False
+    name_conversion : dict, optional
+        A dictionary mapping variable names to more descriptive names for
+        axis labels and titles, by default {}
+    add_legend : bool, optional
+        Whether to add a legend to the plot, by default True
+    save_path : str, optional
+        Path to save the plot, by default None
+        
+
+    Returns
+    -------
+    sns.FacetGrid
+        The FacetGrid object containing the plots.
     """
     if plotting_function is None:
         raise ValueError("plotting_function must be provided.")
@@ -441,26 +393,104 @@ def plot_boxplot(
         sns.boxplot(data=temp, x=x_axis, y=y_axis, hue=hue_variable, palette=palette, ax=ax)
     else:
         sns.boxplot(data=temp, x=x_axis, y=y_axis, ax=ax)
-    
-    # xname = f"{x_axis.replace('_', ' ').title()}"
-    # plt.xlabel(f"Log {xname}" if log_x_axis else f"{xname}")
-    # yname = (
-    #     f"Log {y_axis.replace('_', ' ').title()}" if log_y_axis else f"{y_axis.replace('_', ' ').title()}"
-    # )
-    # plt.ylabel(yname)
-    # plt.tight_layout()
-    # plt.legend(title="Method")
 
-    # plt.title(
-    #     "Boxplot of "
-    #     + ("Log RMSE" if log_x_axis else "RMSE")
-    #     + " vs "
-    #     + (f"Log {xname}" if log_x_axis else f"{xname}")
-    # )
 
-    # if save_path is not None:
-    #     plt.savefig(save_path + ".png", dpi=300, bbox_inches="tight")
-    #     plt.savefig(save_path + ".pdf", dpi=300, bbox_inches="tight")
-    # else:
-    #     plt.show()
-    # plt.close()
+def plot_individual(
+    results,
+    y_axis,
+    x_axis,
+    factors=None,
+    colors=None,
+    linestyles=None,
+    save_path=None,
+    log_y_axis=True,
+    log_x_axis=False,
+    se_bands=True,
+    height=4,
+    aspect=1.3,
+    name_conversion=None,
+):
+    """
+    Plot individual lineplots for each combination of aggregate_x and aggregate_y.
+    """
+
+    if save_path is not None:
+        os.makedirs(os.path.dirname(save_path), exist_ok=True)
+
+    if factors is None:
+        factors = []
+
+    hue_variable = factors[0] if len(factors) >= 1 else None
+    grouping_vars = factors[1:] if len(factors) >= 2 else []
+
+    grouped_stats = aggregate_results(
+        results,
+        y_axis=y_axis,
+        x_axis=x_axis,
+        factors=factors,
+        log_y_axis=log_y_axis,
+        log_x_axis=log_x_axis,
+    )
+
+    if len(grouping_vars) > 0:
+        for group_values, data_subset in grouped_stats.groupby(grouping_vars):
+            if not isinstance(group_values, tuple):
+                group_values = (group_values,)
+
+            fig, ax = plt.subplots(figsize=(height * aspect, height))
+
+            plot_with_bands(
+                data=data_subset,
+                x_axis=x_axis,
+                y_axis=y_axis + "_mean",
+                factors=factors,
+                plot_bands=y_axis + "_sem" if se_bands else None,
+                ax=ax,
+                colors=colors,
+                linestyles=linestyles,
+            )
+
+            if len(grouping_vars) == 2:
+                title = (
+                    f"{name_conversion.get(grouping_vars[0], grouping_vars[0]).replace('_', ' ').title()}: {group_values[0]}, "
+                    f"{name_conversion.get(grouping_vars[1], grouping_vars[1]).replace('_', ' ').title()}: {group_values[1]}"
+                )
+            elif len(grouping_vars) == 1:
+                title = (
+                    f"{name_conversion.get(grouping_vars[0], grouping_vars[0]).replace('_', ' ').title()}: {group_values[0]}"
+                )
+            else:
+                title = (
+                    f"{name_conversion.get(x_axis, x_axis).replace('_', ' ').title()} vs "
+                    f"{name_conversion.get(y_axis, y_axis).replace('_', ' ').title()}"
+                )
+
+            ax.set_title(title)
+            xlabel = (
+                name_conversion.get(x_axis, x_axis).replace("_", " ").title()
+            )
+            ylabel = (
+                name_conversion.get(y_axis, y_axis).replace("_", " ").title()
+            )
+            ax.set_xlabel("Log " + xlabel if log_x_axis else xlabel)
+            ax.set_ylabel("Log " + ylabel if log_y_axis else ylabel)
+
+            plt.legend(title="Method")
+
+            if save_path is not None:
+                path = f"{save_path}" + "".join(f"_{val}" for val in group_values)
+                plt.savefig(
+                    f"{path}.png",
+                    dpi=300,
+                    bbox_inches="tight",
+                )
+                plt.savefig(
+                    f"{path}.pdf",
+                    dpi=300,
+                    bbox_inches="tight",
+                )
+            else:
+                plt.show()
+            plt.close()
+    else:
+        raise NotImplementedError

@@ -36,7 +36,6 @@ if __name__ == "__main__":
     results_dir = cfg.get("results_dir", "results/")
     data_dir = cfg.get("data_dir", "data/")
 
-    print("Running simulation...")
     start_time = time.time()
     sim_out, samples_list = run_simulation(
         nsim=nsim,
@@ -48,10 +47,10 @@ if __name__ == "__main__":
         alpha=alpha,
         rng=rng,
         metrics=metrics,
-        results_dir=results_dir
+        results_dir=results_dir,
+        parallel=True
     )
 
-    
     sim_out.to_csv(f"{results_dir}/raw/full_simulation_results.csv", index=False)
     with open(f"{data_dir}/simulated/simulation_samples.pkl", "wb") as f:
         pickle.dump(samples_list, f)
