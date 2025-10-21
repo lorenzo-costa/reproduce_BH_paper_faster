@@ -6,9 +6,18 @@ This project aims to reproduce the findings from the paper "Controlling the Fals
 
 ## Setup Instructions
 
-You can set up the necessary environment using either Conda (recommended, what I'm using) or pip.
+### Stepo 0: Clone the repository
 
-### Option 1: Using Conda
+```bash
+git clone [https://github.com/lorenzo-costa/reproduce_BH_paper.git](https://github.com/lorenzo-costa/reproduce_BH_paper.git)
+cd reproduce_BH_paper
+```
+
+### Step 1: setup the environment
+
+Once you have cloned the repository, you can set up the necessary environment using either Conda (recommended, what I'm using) or pip.
+
+#### Option 1: Using Conda
 
 1.  Ensure you have [Miniconda](https://docs.conda.io/en/latest/miniconda.html) or [Anaconda](https://www.anaconda.com/products/distribution) installed.
 2.  Create the Conda environment from the `environment.yml` file:
@@ -20,7 +29,7 @@ You can set up the necessary environment using either Conda (recommended, what I
     conda activate bh-repro
     ```
 
-### Option 2: Using pip
+#### Option 2: Using pip
 
 1.  It is recommended to use a virtual environment:
     ```bash
