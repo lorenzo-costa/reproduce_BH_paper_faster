@@ -6,7 +6,7 @@ This project aims to reproduce the findings from the paper "Controlling the Fals
 
 ## Setup Instructions
 
-You can set up the necessary environment using either Conda or pip.
+You can set up the necessary environment using either Conda (recommended, what I'm using) or pip.
 
 ### Option 1: Using Conda
 
