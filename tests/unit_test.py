@@ -1,9 +1,9 @@
 import pytest
-from ..src.dgps import NormalGenerator, compute_p_values, generate_means
-from ..src.methods import BonferroniHochberg, BenjaminiHochberg, Bonferroni
-from ..src.metrics import Power
+from src.dgps import NormalGenerator, compute_p_values, generate_means
+from src.methods import BonferroniHochberg, BenjaminiHochberg, Bonferroni
+from src.metrics import Power, FalseDiscoveryRate, TrueRejections, RejectionsNumber
 import numpy as np
-
+ 
 
 # Test the normal data generator
 def test_normal_data_generator():
@@ -205,3 +205,96 @@ def test_compute_p_values(normal_samples, expected):
 def test_power_metric(rejections, true_alternatives, expected):
     result = Power()(rejections, true_alternatives)
     assert np.isclose(result, expected, atol=1e-4)
+
+# test False Discovery Rate metric
+@pytest.mark.parametrize(
+    "rejections, true_alternatives, expected",
+    [
+        (
+            np.array([True, True, False, False]),
+            np.array([True, False, True, False]),
+            0.5,
+        ),
+        (
+            np.array([True, True, True, False]),
+            np.array([True, True, False, False]),
+            1 / 3,
+        ),
+        (np.array([True, True, True, True]), np.array([True, True, True, False]), 0.25),
+        (
+            np.array([False, False, False, False]),
+            np.array([True, True, False, False]),
+            0.0,
+        ),
+        (
+            np.array([True, False, True, False]),
+            np.array([False, False, False, False]),
+            1.0,
+        ),
+    ],
+)
+def test_false_discovery_rate_metric(rejections, true_alternatives, expected):
+    result = FalseDiscoveryRate()(rejections, true_alternatives)
+    assert np.isclose(result, expected, atol=1e-4)
+
+# test True Rejections metric
+@pytest.mark.parametrize(
+    "rejections, true_alternatives, expected",
+    [
+        (
+            np.array([True, True, False, False]),
+            np.array([True, False, True, False]),
+            1,
+        ),
+        (
+            np.array([True, True, True, False]),
+            np.array([True, True, False, False]),
+            2,
+        ),
+        (np.array([True, True, True, True]), np.array([True, True, True, False]), 3),
+        (
+            np.array([False, False, False, False]),
+            np.array([True, True, False, False]),
+            0,
+        ),
+        (
+            np.array([True, False, True, False]),
+            np.array([False, False, False, False]),
+            0,
+        ),
+    ],
+)
+def test_true_rejections_metric(rejections, true_alternatives, expected):
+    result = TrueRejections()(rejections, true_alternatives)
+    assert result == expected
+
+# test Rejections Number metric
+@pytest.mark.parametrize(
+    "rejections, true_alternatives, expected",
+    [
+        (
+            np.array([True, True, False, False]),
+            np.array([True, False, True, False]),
+            2,
+        ),
+        (
+            np.array([True, True, True, False]),
+            np.array([True, True, False, False]),
+            3,
+        ),
+        (np.array([True, True, True, True]), np.array([True, True, True, False]), 4),
+        (
+            np.array([False, False, False, False]),
+            np.array([True, True, False, False]),
+            0,
+        ),
+        (
+            np.array([True, False, True, False]),
+            np.array([False, False, False, False]),
+            2,
+        ),
+    ],
+)
+def test_rejections_number_metric(rejections, true_alternatives, expected):
+    result = RejectionsNumber()(rejections, true_alternatives)
+    assert result == expected

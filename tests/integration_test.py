@@ -1,7 +1,7 @@
-from ..src.simulation_functs import run_simulation
+from src.simulation_functs import run_simulation
 import pytest
-from ..src.methods import Bonferroni, BonferroniHochberg, BenjaminiHochberg
-from ..src.metrics import Power, TrueRejections, RejectionsNumber
+from src.methods import Bonferroni, BonferroniHochberg, BenjaminiHochberg
+from src.metrics import Power, TrueRejections, RejectionsNumber
 import numpy as np
 
 
