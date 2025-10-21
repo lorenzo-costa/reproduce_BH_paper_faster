@@ -273,6 +273,7 @@ def run_simulation(
 
             for m_i in m:
                 samples = NormalGenerator(loc=0, scale=1).generate(m_i, rng=rng)
+                # TODO: handle this better to speed up code
                 samples_list.append(samples)
                 for m0_i, L_i, scheme_i, method_i in itertools.product(
                     m0_fraction, L, scheme, method
@@ -288,6 +289,9 @@ def run_simulation(
                         rng=rng,
                     )
                     scenario_out["nsim"] = i + 1
+                    # TODO: Optimize this concatenation
+                    # this creates a monstrous bottleneck, luckyly the parallel version avoids it
+                    # may easily get a 50x speedup by gettign this right. 
                     out = pd.concat(
                         [out, pd.DataFrame(scenario_out, index=[0])], ignore_index=True
                     )

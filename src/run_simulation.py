@@ -3,7 +3,7 @@ Script to run the simulation study
 """
 
 from src.simulation_functs import run_simulation
-from src.metrics import Power, TrueRejections, RejectionsNumber
+from src.metrics import Power, TrueRejections, RejectionsNumber, FalseDiscoveryRate
 from src.methods import Bonferroni, BonferroniHochberg, BenjaminiHochberg
 
 import pickle
@@ -27,7 +27,7 @@ if __name__ == "__main__":
     alpha = cfg["alpha"]
     m = cfg["m"]
     m0 = cfg["m0"]
-    metrics = [Power(), TrueRejections(), RejectionsNumber()]
+    metrics = [Power(), TrueRejections(), RejectionsNumber(), FalseDiscoveryRate()]
     L = cfg["L"]
     scheme = cfg["scheme"]
     rng = np.random.default_rng(cfg["rng_seed"])

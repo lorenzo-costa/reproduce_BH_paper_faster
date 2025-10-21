@@ -278,6 +278,8 @@ def plot_grid(results, x_axis, y_axis, factors, plotting_function=None, **kwargs
     add_legend = kwargs.get("add_legend", True)
     ratio_variable = kwargs.get("ratio_variable", None)
     title = kwargs.get("title", None)
+    x_axis_title = kwargs.get("x_axis_title", None)
+    y_axis_title = kwargs.get("y_axis_title", None)
     
     if save_path is not None:
         os.makedirs(os.path.dirname(save_path), exist_ok=True)
@@ -368,20 +370,22 @@ def plot_grid(results, x_axis, y_axis, factors, plotting_function=None, **kwargs
         ax.set_title("")
 
     # Set x and y axis labels only in central places
-    x_label = (
-        "Log " + name_conversion.get(x_axis, x_axis).replace("_", " ").title()
-        if log_x_axis
-        else name_conversion.get(x_axis, x_axis).replace("_", " ").title()
-    )
-    g.axes[-1, g.axes.shape[1] // 2].set_xlabel(x_label)
+    if x_axis_title is None:
+        x_axis_title = (
+            "Log " + name_conversion.get(x_axis, x_axis).replace("_", " ").title()
+            if log_x_axis
+            else name_conversion.get(x_axis, x_axis).replace("_", " ").title()
+        )
+    g.axes[-1, g.axes.shape[1] // 2].set_xlabel(x_axis_title)
+    
+    if y_axis_title is None:
+        y_axis_title = (
+            "Log " + name_conversion.get(y_axis, y_axis).replace("_", " ").title()
+            if log_y_axis
+            else name_conversion.get(y_axis, y_axis).replace("_", " ").title()
+        )
 
-    y_label = (
-        "Log " + name_conversion.get(y_axis, y_axis).replace("_", " ").title()
-        if log_y_axis
-        else name_conversion.get(y_axis, y_axis).replace("_", " ").title()
-    )
-
-    g.axes[g.axes.shape[0] // 2, 0].set_ylabel(y_label)
+    g.axes[g.axes.shape[0] // 2, 0].set_ylabel(y_axis_title)
 
     if len(factors) >= 2:
         # column facet titles

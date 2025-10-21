@@ -86,4 +86,6 @@ plots:
     ratio_variable: L
     height : 1.3
     group_variables : true
-    title : "Power Ratio (L=10 / L=5)"
+    title : "Power Ratio (L=10 / L=5) vs Number of Tested Hypotheses"
+    x_axis_title : "Power Ratio (L=10 / L=5)"
+    y_axis_title : "Number of Tested Hypotheses"
