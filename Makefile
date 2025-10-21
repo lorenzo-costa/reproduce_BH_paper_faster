@@ -15,7 +15,11 @@ all: simulate figures
 simulate:
 	$(PYTHON) -m $(SRC).run_simulation
 
-# Step 2: Generate figures (optional if scripts already output plots)
+# Step 2: analyze results
+analyse:
+	$(PYTHON) -m $(SRC).analyse_data
+
+# Step 3: Generate figures (optional if scripts already output plots)
 figures:
 	$(PYTHON) -m $(SRC).make_plots
 	@echo "Figures should now be in $(RESULTS)/figures"
