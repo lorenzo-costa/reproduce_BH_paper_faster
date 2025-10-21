@@ -9,7 +9,7 @@ RESULTS=results
 # Default target
 .PHONY: all simulate figures clean
 
-all: simulate figures
+all: simulate analyse figures
 
 # Step 1: Run simulations
 simulate:
