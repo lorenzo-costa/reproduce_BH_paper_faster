@@ -291,7 +291,7 @@ def run_simulation(
                     scenario_out["nsim"] = i + 1
                     # TODO: Optimize this concatenation
                     # this creates a monstrous bottleneck, luckyly the parallel version avoids it
-                    # may easily get a 50x speedup by gettign this right. 
+                    # may easily get a 50x speedup by gettign this right.
                     out = pd.concat(
                         [out, pd.DataFrame(scenario_out, index=[0])], ignore_index=True
                     )

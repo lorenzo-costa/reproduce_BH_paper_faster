@@ -80,6 +80,7 @@ def plot_with_bands(x_axis, y_axis, **kwargs):
                 color=color,
             )
 
+
 def plot_boxplot(x_axis, y_axis, **kwargs):
     """Create a boxplot for the given x and y axes.
 
@@ -143,7 +144,6 @@ def plot_boxplot(x_axis, y_axis, **kwargs):
         )
     else:
         sns.boxplot(data=temp, x=x_axis, y=y_axis, ax=ax)
-    
 
 
 def plot_grid(grouped_stats, x_axis, y_axis, factors, plotting_function=None, **kwargs):
@@ -202,14 +202,14 @@ def plot_grid(grouped_stats, x_axis, y_axis, factors, plotting_function=None, **
     title = kwargs.get("title", None)
     x_axis_title = kwargs.get("x_axis_title", None)
     y_axis_title = kwargs.get("y_axis_title", None)
-    
+
     if save_path is not None:
         os.makedirs(os.path.dirname(save_path), exist_ok=True)
-    
+
     hue_variable = factors[0] if len(factors) >= 2 else None
     aggregate_x = factors[1] if len(factors) >= 2 else factors[0]
     aggregate_y = factors[2] if len(factors) >= 3 else None
-        
+
     g = sns.FacetGrid(
         grouped_stats,
         row=aggregate_y,
@@ -220,7 +220,7 @@ def plot_grid(grouped_stats, x_axis, y_axis, factors, plotting_function=None, **
         height=height,
         aspect=aspect,
     )
-            
+
     g.map_dataframe(
         plotting_function,
         x_axis=x_axis,
@@ -242,7 +242,7 @@ def plot_grid(grouped_stats, x_axis, y_axis, factors, plotting_function=None, **
             else name_conversion.get(x_axis, x_axis).replace("_", " ").title()
         )
     g.axes[-1, g.axes.shape[1] // 2].set_xlabel(x_axis_title)
-    
+
     if y_axis_title is None:
         y_axis_title = (
             "Log " + name_conversion.get(y_axis, y_axis).replace("_", " ").title()

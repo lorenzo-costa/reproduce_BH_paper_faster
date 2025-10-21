@@ -1,9 +1,18 @@
 import pytest
 from src.helper_functions.dgps import NormalGenerator, compute_p_values, generate_means
-from src.helper_functions.methods import BonferroniHochberg, BenjaminiHochberg, Bonferroni
-from src.helper_functions.metrics import Power, FalseDiscoveryRate, TrueRejections, RejectionsNumber
+from src.helper_functions.methods import (
+    BonferroniHochberg,
+    BenjaminiHochberg,
+    Bonferroni,
+)
+from src.helper_functions.metrics import (
+    Power,
+    FalseDiscoveryRate,
+    TrueRejections,
+    RejectionsNumber,
+)
 import numpy as np
- 
+
 
 # Test the normal data generator
 def test_normal_data_generator():
@@ -206,6 +215,7 @@ def test_power_metric(rejections, true_alternatives, expected):
     result = Power()(rejections, true_alternatives)
     assert np.isclose(result, expected, atol=1e-4)
 
+
 # test False Discovery Rate metric
 @pytest.mark.parametrize(
     "rejections, true_alternatives, expected",
@@ -237,6 +247,7 @@ def test_false_discovery_rate_metric(rejections, true_alternatives, expected):
     result = FalseDiscoveryRate()(rejections, true_alternatives)
     assert np.isclose(result, expected, atol=1e-4)
 
+
 # test True Rejections metric
 @pytest.mark.parametrize(
     "rejections, true_alternatives, expected",
@@ -267,6 +278,7 @@ def test_false_discovery_rate_metric(rejections, true_alternatives, expected):
 def test_true_rejections_metric(rejections, true_alternatives, expected):
     result = TrueRejections()(rejections, true_alternatives)
     assert result == expected
+
 
 # test Rejections Number metric
 @pytest.mark.parametrize(

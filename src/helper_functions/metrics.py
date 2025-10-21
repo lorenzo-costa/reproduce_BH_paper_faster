@@ -93,6 +93,7 @@ class Power(Metric):
 
         return power
 
+
 class FalseDiscoveryRate(Metric):
     """False Discovery Rate metric.
 

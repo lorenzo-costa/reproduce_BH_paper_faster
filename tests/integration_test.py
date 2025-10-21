@@ -1,6 +1,10 @@
 from src.helper_functions.simulation_functs import run_simulation
 import pytest
-from src.helper_functions.methods import Bonferroni, BonferroniHochberg, BenjaminiHochberg
+from src.helper_functions.methods import (
+    Bonferroni,
+    BonferroniHochberg,
+    BenjaminiHochberg,
+)
 from src.helper_functions.metrics import Power, TrueRejections, RejectionsNumber
 import numpy as np
 

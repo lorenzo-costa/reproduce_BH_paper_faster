@@ -1,28 +1,24 @@
-
 import pandas as pd
 import numpy as np
 
+
 def _ratio_helper(df, factors, ratio_variable, y_axis, num, den):
-    df_ratio = (
-        df.pivot_table(
-            index=factors,
-            columns=ratio_variable,
-            values=y_axis + "_mean"
-        )
-        .reset_index()
-    )
+    df_ratio = df.pivot_table(
+        index=factors, columns=ratio_variable, values=y_axis + "_mean"
+    ).reset_index()
     df_ratio[y_axis + "_ratio"] = df_ratio[num] / df_ratio[den]
 
     return df_ratio
 
+
 def aggregate_results(
-    results, 
-    y_axis, 
-    x_axis, 
-    factors=None, 
-    log_x_axis=False, 
-    log_y_axis=False, 
-    transform=None
+    results,
+    y_axis,
+    x_axis,
+    factors=None,
+    log_x_axis=False,
+    log_y_axis=False,
+    transform=None,
 ):
     """Compute dataset with mean and standard error for each group.
 
@@ -70,39 +66,40 @@ def aggregate_results(
 
     if log_x_axis is True:
         grouped_stats[x_axis] = np.log10(grouped_stats[x_axis])
-    
+
     if transform is not None:
         grouped_stats = transform(grouped_stats)
 
     return grouped_stats
+
 
 def analyse_function(results, x_axis, y_axis, factors, **kwargs):
     group_variables = kwargs.get("group_variables", False)
     log_y_axis = kwargs.get("log_y_axis", False)
     log_x_axis = kwargs.get("log_x_axis", False)
     ratio_variable = kwargs.get("ratio_variable", None)
-    
+
     results = results.copy()
 
     if group_variables is True:
-            grouped_stats = aggregate_results(
-                results,
-                x_axis=x_axis,
+        grouped_stats = aggregate_results(
+            results,
+            x_axis=x_axis,
+            y_axis=y_axis,
+            factors=factors + ([ratio_variable] if ratio_variable is not None else []),
+            log_x_axis=log_x_axis,
+            log_y_axis=log_y_axis,
+        )
+        if ratio_variable is not None:
+            den, num = sorted(results[ratio_variable].unique())
+            grouped_stats = _ratio_helper(
+                grouped_stats,
+                factors=factors + [x_axis],
+                ratio_variable=ratio_variable,
                 y_axis=y_axis,
-                factors=factors+([ratio_variable] if ratio_variable is not None else []),
-                log_x_axis=log_x_axis,
-                log_y_axis=log_y_axis,
+                num=num,
+                den=den,
             )
-            if ratio_variable is not None:
-                den, num = sorted(results[ratio_variable].unique())
-                grouped_stats = _ratio_helper(
-                    grouped_stats,
-                    factors=factors+[x_axis],
-                    ratio_variable=ratio_variable,
-                    y_axis=y_axis,
-                    num=num,
-                    den=den
-                )
     else:
         # for consistency, for boxplot we don't aggregate
         grouped_stats = results.copy()
@@ -125,5 +122,3 @@ def analyse_function(results, x_axis, y_axis, factors, **kwargs):
                 ordered=True,
             )
     return grouped_stats
-
-        
