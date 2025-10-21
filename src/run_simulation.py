@@ -2,9 +2,9 @@
 Script to run the simulation study
 """
 
-from src.simulation_functs import run_simulation
-from src.metrics import Power, TrueRejections, RejectionsNumber, FalseDiscoveryRate
-from src.methods import Bonferroni, BonferroniHochberg, BenjaminiHochberg
+from src.helper_functions.simulation_functs import run_simulation
+from src.helper_functions.metrics import Power, TrueRejections, RejectionsNumber, FalseDiscoveryRate
+from src.helper_functions.methods import Bonferroni, BonferroniHochberg, BenjaminiHochberg
 
 import pickle
 import numpy as np
@@ -46,11 +46,11 @@ if __name__ == "__main__":
         alpha=alpha,
         rng=rng,
         metrics=metrics,
-        results_dir=results_dir,
+        results_dir=data_dir,
         parallel=True,
     )
 
-    sim_out.to_csv(f"{results_dir}/raw/full_simulation_results.csv", index=False)
+    sim_out.to_csv(f"{data_dir}/simulated/full_simulation_results.csv", index=False)
     with open(f"{data_dir}/simulated/simulation_samples.pkl", "wb") as f:
         pickle.dump(samples_list, f)
     end = time.time()

@@ -11,68 +11,6 @@ import re
 logging.getLogger("matplotlib.category").setLevel(logging.ERROR)
 
 
-def aggregate_results(
-    results, 
-    y_axis, 
-    x_axis, 
-    factors=None, 
-    log_x_axis=False, 
-    log_y_axis=False, 
-    transform=None
-):
-    """Compute dataset with mean and standard error for each group.
-
-    Parameters
-    ----------
-    results : pd.DataFrame
-        Input DataFrame to group and aggregate.
-    y_axis : str
-        The name of the column to be used for the y-axis.
-    x_axis : str
-        The name of the column to be used for the x-axis.
-    factors : list, optional
-        A list of column names to be used as additional factors for grouping,
-        by default None
-    log_x_axis : bool, optional
-        Whether to use a logarithmic scale for the x-axis, by default True
-    log_y_axis : bool, optional
-        Whether to use a logarithmic scale for the y-axis, by default False
-    transform : callable, optional
-        A function to apply to the df after aggregation, by default None
-
-    Returns
-    -------
-    pd.DataFrame
-        DataFrame containing the aggregated results with mean and standard error for each group
-    """
-    if factors is None:
-        factors = []
-
-    grouping = [x_axis] + factors
-
-    grouped_stats = (
-        results.groupby(grouping).agg({y_axis: ["mean", "sem"]}).reset_index()
-    )
-    grouped_stats.columns = grouping + [
-        f"{y_axis}_mean",
-        f"{y_axis}_sem",
-    ]
-
-    if log_y_axis is True:
-        grouped_stats[f"{y_axis}_mean"] = np.log10(grouped_stats[f"{y_axis}_mean"])
-        grouped_stats[f"{y_axis}_sem"] = (
-            grouped_stats[f"{y_axis}_sem"] / grouped_stats[f"{y_axis}_mean"]
-        )
-
-    if log_x_axis is True:
-        grouped_stats[x_axis] = np.log10(grouped_stats[x_axis])
-    
-    if transform is not None:
-        grouped_stats = transform(grouped_stats)
-
-    return grouped_stats
-
-
 def plot_with_bands(x_axis, y_axis, **kwargs):
     """Plot lines with confidence/error bands for each method.
 
@@ -97,7 +35,7 @@ def plot_with_bands(x_axis, y_axis, **kwargs):
     """
     data = kwargs.pop("data")
     factors = kwargs.pop("factors", None)
-    plot_bands = kwargs.pop("plot_bands", None)
+    se_bands = kwargs.pop("se_bands", None)
     colors = kwargs.pop("colors", None)
     linestyles = kwargs.pop("linestyles", None)
 
@@ -117,11 +55,11 @@ def plot_with_bands(x_axis, y_axis, **kwargs):
             )
             color = line[0].get_color()
 
-            if plot_bands is not None:
+            if se_bands is not None:
                 ax.fill_between(
                     subset[x_axis],
-                    subset[y_axis] - subset[plot_bands],
-                    subset[y_axis] + subset[plot_bands],
+                    subset[y_axis] - subset[se_bands],
+                    subset[y_axis] + subset[se_bands],
                     alpha=0.2,
                     color=color,
                 )
@@ -133,11 +71,11 @@ def plot_with_bands(x_axis, y_axis, **kwargs):
         )
         color = line[0].get_color()
 
-        if plot_bands is not None:
+        if se_bands is not None:
             ax.fill_between(
                 subset[x_axis],
-                subset[y_axis] - subset[plot_bands],
-                subset[y_axis] + subset[plot_bands],
+                subset[y_axis] - subset[se_bands],
+                subset[y_axis] + subset[se_bands],
                 alpha=0.2,
                 color=color,
             )
@@ -205,24 +143,10 @@ def plot_boxplot(x_axis, y_axis, **kwargs):
         )
     else:
         sns.boxplot(data=temp, x=x_axis, y=y_axis, ax=ax)
-
-
-def _ratio_helper(df, factors, ratio_variable, y_axis, num, den):
-    df_ratio = (
-        df.pivot_table(
-            index=factors,
-            columns=ratio_variable,
-            values=y_axis + "_mean"
-        )
-        .reset_index()
-    )
-    df_ratio[y_axis + "_ratio"] = df_ratio[num] / df_ratio[den]
-
-    return df_ratio
     
 
 
-def plot_grid(results, x_axis, y_axis, factors, plotting_function=None, **kwargs):
+def plot_grid(grouped_stats, x_axis, y_axis, factors, plotting_function=None, **kwargs):
     """Plot a grid of plots using the specified plotting function.
 
     Parameters
@@ -244,8 +168,8 @@ def plot_grid(results, x_axis, y_axis, factors, plotting_function=None, **kwargs
     group_variables : bool, optional
         Whether to aggregate results by computing mean and standard error
         for each combination of factors, by default False
-    se_bands : bool, optional
-        Whether to plot standard error bands, by default False
+    se_bands : str, optional
+        The name of the column to use for plotting standard error bands, by default None
     log_y_axis : bool, optional
         Whether to use a logarithmic scale for the y-axis, by default False
     log_x_axis : bool, optional
@@ -269,98 +193,39 @@ def plot_grid(results, x_axis, y_axis, factors, plotting_function=None, **kwargs
 
     height = kwargs.get("height", 1.3)
     save_path = kwargs.get("save_path", None)
-    group_variables = kwargs.get("group_variables", False)
-    se_bands = kwargs.get("se_bands", False)
+    se_bands = kwargs.get("se_bands", None)
     log_y_axis = kwargs.get("log_y_axis", False)
     log_x_axis = kwargs.get("log_x_axis", False)
     aspect = kwargs.get("aspect", 1.3)
     name_conversion = kwargs.get("name_conversion", {})
     add_legend = kwargs.get("add_legend", True)
-    ratio_variable = kwargs.get("ratio_variable", None)
     title = kwargs.get("title", None)
     x_axis_title = kwargs.get("x_axis_title", None)
     y_axis_title = kwargs.get("y_axis_title", None)
     
     if save_path is not None:
         os.makedirs(os.path.dirname(save_path), exist_ok=True)
-
-    if group_variables is True:
-        grouped_stats = aggregate_results(
-            results,
-            x_axis=x_axis,
-            y_axis=y_axis,
-            factors=factors+([ratio_variable] if ratio_variable is not None else []),
-            log_x_axis=log_x_axis,
-            log_y_axis=log_y_axis,
-        )
-        if ratio_variable is not None:
-            den, num = sorted(results[ratio_variable].unique())
-            grouped_stats = _ratio_helper(
-                grouped_stats,
-                factors=factors+[x_axis],
-                ratio_variable=ratio_variable,
-                y_axis=y_axis,
-                num=num,
-                den=den
-            )
-    else:
-        # for consistency, for boxplot we don't aggregate
-        grouped_stats = results.copy()
-
-    if len(factors) < 2:
-        # for consistency this forces FaceGrid to plot a single cell
-        grouped_stats = grouped_stats.copy()
-        grouped_stats["_single_facet"] = ""
-
-        g = sns.FacetGrid(
-            grouped_stats,
-            col="_single_facet",
-            height=height,
-            aspect=aspect,
-            sharey=True,
-            sharex=True,
-        )
-    else:
-        hue_variable = factors[0] if len(factors) >= 2 else None
-        aggregate_x = factors[1] if len(factors) >= 2 else factors[0]
-        aggregate_y = factors[2] if len(factors) >= 3 else None
-
-        if aggregate_y:
-            # for consistency, if only one aggregating variable plot a row
-            grouped_stats[aggregate_y] = pd.Categorical(
-                grouped_stats[aggregate_y],
-                categories=sorted(grouped_stats[aggregate_y].unique(), reverse=True),
-                ordered=True,
-            )
-
-        g = sns.FacetGrid(
-            grouped_stats,
-            row=aggregate_y,
-            col=aggregate_x,
-            margin_titles=True,
-            sharey=True,
-            sharex=True,
-            height=height,
-            aspect=aspect,
-        )
-
-    new_y = y_axis
-    if group_variables is True:
-        if ratio_variable is not None:
-            new_y = y_axis + "_ratio"
-        else:
-            new_y = y_axis + "_mean"
     
-    new_bands = (
-        y_axis + "_sem" if (se_bands is True and group_variables is True) else None
+    hue_variable = factors[0] if len(factors) >= 2 else None
+    aggregate_x = factors[1] if len(factors) >= 2 else factors[0]
+    aggregate_y = factors[2] if len(factors) >= 3 else None
+        
+    g = sns.FacetGrid(
+        grouped_stats,
+        row=aggregate_y,
+        col=aggregate_x,
+        margin_titles=True,
+        sharey=True,
+        sharex=True,
+        height=height,
+        aspect=aspect,
     )
-
+            
     g.map_dataframe(
         plotting_function,
         x_axis=x_axis,
-        y_axis=new_y,
+        y_axis=y_axis,
         factors=factors,
-        plot_bands=new_bands,
         **kwargs,
     )
     # remove default x/y axis labels and tick labels from all subplots
@@ -398,6 +263,8 @@ def plot_grid(results, x_axis, y_axis, factors, plotting_function=None, **kwargs
                 re.IGNORECASE,
             ):
                 facet_title = f"{int(g.col_names[ax] * 100)}% {name_conversion.get(aggregate_x, aggregate_x).replace('_', ' ').title()}"
+            elif aggregate_x[0] == "_":
+                facet_title = ""
             else:
                 facet_title = f"{name_conversion.get(aggregate_x, aggregate_x).replace('_', ' ').title()}: {g.col_names[ax]}"
             g.axes[0, ax].set_title(facet_title)

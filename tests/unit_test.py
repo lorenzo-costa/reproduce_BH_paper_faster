@@ -1,7 +1,7 @@
 import pytest
-from src.dgps import NormalGenerator, compute_p_values, generate_means
-from src.methods import BonferroniHochberg, BenjaminiHochberg, Bonferroni
-from src.metrics import Power, FalseDiscoveryRate, TrueRejections, RejectionsNumber
+from src.helper_functions.dgps import NormalGenerator, compute_p_values, generate_means
+from src.helper_functions.methods import BonferroniHochberg, BenjaminiHochberg, Bonferroni
+from src.helper_functions.metrics import Power, FalseDiscoveryRate, TrueRejections, RejectionsNumber
 import numpy as np
  
 
