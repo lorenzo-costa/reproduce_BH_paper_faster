@@ -46,7 +46,7 @@ if __name__ == "__main__":
         alpha=alpha,
         rng=rng,
         metrics=metrics,
-        results_dir=data_dir,
+        results_dir=data_dir+"/simulated/",
         parallel=True,
     )
 

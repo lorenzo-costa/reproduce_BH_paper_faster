@@ -177,7 +177,7 @@ def run_simulation_parallel(
 
                 if (i + 1) in save_points:
                     out.to_csv(
-                        f"{results_dir}/raw/simulation_results_checkpoint_{i}.csv",
+                        f"{results_dir}/simulation_results_checkpoint_{i}.csv",
                         index=False,
                     )
 
