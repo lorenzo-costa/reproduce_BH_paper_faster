@@ -9,7 +9,7 @@ This project aims to reproduce the findings from the paper "Controlling the Fals
 ### Stepo 0: Clone the repository
 
 ```bash
-git clone [https://github.com/lorenzo-costa/reproduce_BH_paper.git](https://github.com/lorenzo-costa/reproduce_BH_paper.git)
+git clone https://github.com/lorenzo-costa/reproduce_BH_paper.git
 cd reproduce_BH_paper
 ```
 
