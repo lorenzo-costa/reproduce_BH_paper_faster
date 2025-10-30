@@ -1,6 +1,8 @@
 notes.txt
 __pycache__
 .pytest_cache
+profile.stats
+notes.txt
 # do not track data
 *.pkl
 *.csv

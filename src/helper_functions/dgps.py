@@ -2,8 +2,8 @@
 
 import numpy as np
 from abc import ABC, abstractmethod
-from scipy import stats
-
+from scipy import special
+from numba import jit
 
 class DataGenerator(ABC):
     """Abstract base class for data generation.
@@ -104,7 +104,7 @@ class NormalGenerator(DataGenerator):
     def null_value(self):
         return self.loc
 
-
+@jit(nopython=True)
 def generate_means(m, m0, scheme, L, rng=None, rounding_biase_correction=False):
     """Generate a simulation scenario from a Gaussian sample.
 
@@ -135,14 +135,14 @@ def generate_means(m, m0, scheme, L, rng=None, rounding_biase_correction=False):
     array([0., 0., 0., 0.])
     """
 
-    if not isinstance(m, int) or m <= 0:
-        raise ValueError("m must be a positive integer")
-    if not isinstance(L, int) or L <= 0:
-        raise ValueError("L must be a positive integer")
-    if not isinstance(m0, int) or m0 < 0 or m0 > m:
-        raise ValueError("m0 must be an integer between 0 and m inclusive")
-    if rng is None:
-        rng = np.random.default_rng()
+    # if not isinstance(m, int) or m <= 0:
+    #     raise ValueError("m must be a positive integer")
+    # if not isinstance(L, int) or L <= 0:
+    #     raise ValueError("L must be a positive integer")
+    # if not isinstance(m0, int) or m0 < 0 or m0 > m:
+    #     raise ValueError("m0 must be an integer between 0 and m inclusive")
+    # if rng is None:
+    #     raise Exception("provide rng")
 
     if scheme not in ["E", "D", "I"]:
         raise ValueError("scheme must be one of 'E', 'D', or 'I'")
@@ -165,7 +165,8 @@ def generate_means(m, m0, scheme, L, rng=None, rounding_biase_correction=False):
         base = m1 / 10
         counts = np.array([base, 2 * base, 3 * base, 4 * base])
 
-    counts = counts.astype(int)
+    for i in range(len(counts)):
+        counts[i] = int(counts[i])
 
     # Adjust for rounding errors
     if rounding_biase_correction is False:
@@ -200,12 +201,16 @@ def generate_means(m, m0, scheme, L, rng=None, rounding_biase_correction=False):
                     counts[-1 - i] -= 1
 
     idx = 0
-    for pos, count in zip(levels, counts):
+    for i in range(len(counts)):
+        pos = levels[i]
+        count = counts[i]
         means[idx : idx + count] = pos
         idx += count
+    
+    rng.shuffle(means)
 
     return means
 
 
 def compute_p_values(z_scores):
-    return 2 * (1 - stats.norm.cdf(np.abs(z_scores)))
+    return special.erfc(np.abs(z_scores) / np.sqrt(2))
